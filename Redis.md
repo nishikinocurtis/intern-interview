@@ -428,6 +428,26 @@ length 属性记录了 contents 数组的大小。
 
 [Redis详解（五）------ redis的五大数据类型实现原理 - YSOcean - 博客园 (cnblogs.com)](https://www.cnblogs.com/ysocean/p/9102811.html)
 
+**string**
+
+简单动态字符串（SDS）
+
+**hash**
+
+ziplist或hashtable
+
+**list**
+
+ziplist或linkedlist
+
+**set**
+
+intset或hashtable
+
+**zset**
+
+ziplist或skiplist
+
 
 
 ## 内存淘汰
