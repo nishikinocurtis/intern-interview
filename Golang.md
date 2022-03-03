@@ -232,19 +232,7 @@ func BaseSync02() {
 
 G运行队列是一个栈结构，分全局队列和P绑定的局部队列，每个G不能独立运行，它需要绑定到P才能被调度执行。
 
-```go
-type g struct {
 
-    m            *m      // current m; offset known to arm liblink
-    sched        gobuf
-    ...
-    param        unsafe.Pointer // passed parameter on wakeup
-    goid         int64
-    ...
-    vdsoSP uintptr // SP for traceback while in VDSO call (0 if not in call)
-    vdsoPC uintptr // PC for traceback while in VDSO call
-}
-```
 
 **M**
 
@@ -252,20 +240,7 @@ Machine，系统物理线程，代表着真正执行计算的资源，在绑定�
 
 而schedule循环的机制大致是从Global队列、P的Local队列以及wait队列中获取G，切换到G的执行栈上并执行G的函数，调用goexit做清理工作并回到M，如此反复。M并不保留G状态，这是G可以跨M调度的基础，M的数量是不定的，由Go Runtime调整，为了防止创建过多OS线程导致系统调度不过来，目前默认最大限制为10000个。
 
-```go
-type m struct {    
-    /*
-    g0的线程栈与M相关
-    */
-    g0       *g
-    Curg *g //M 现在绑定的G
 
-    // SP, PC registers for on-site protection and on-site recovery
-    vdsoSP uintptr
-    vdsoPC uintptr
-    ...
-}
-```
 
 **P**
 
