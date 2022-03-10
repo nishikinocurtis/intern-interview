@@ -181,7 +181,7 @@ func waitGroup() {
 
 **同步锁/互斥锁 sync.Mutex**
 
-所谓互斥锁，synv.Mutex ,保证被锁定资源不被其他协程占用，即被加锁的对象在同一时间只允许一个协程读或写。
+所谓互斥锁，sync.Mutex ,保证被锁定资源不被其他协程占用，即被加锁的对象在同一时间只允许一个协程读或写。
 
 ```go
 func BaseSync02() {
@@ -349,3 +349,44 @@ Mutex实现中有两种模式，**1：正常模式，2：饥饿模式**，前者
 ## Go RPC
 
 [11 Go RPC - 简书 (jianshu.com)](https://www.jianshu.com/p/70cf3e3e4571)
+
+
+
+## Go 双线程打印奇偶
+
+```go
+package main
+
+import "fmt"
+
+func main() {
+	ch1 := make(chan string)
+	ch2 := make(chan string)
+	end := make(chan string)
+    //线程A
+	go func() {
+		for i := 0; i < 100; i += 2 {
+			//等待 B 来唤醒
+			<-ch2
+			fmt.Println(i, "A")
+			//唤醒 B
+			ch1 <- "print A"
+		}
+	}()
+    //线程B
+	go func() {
+		//首先唤醒 A
+		ch2 <- "begin"
+		for i := 1; i < 99; i += 2 {
+			//等待 A 来唤醒
+			<-ch1
+			fmt.Println(i, "B")
+			//唤醒 A
+			ch2 <- "print B"
+		}
+		end <- "end"
+	}()
+    
+	<-end
+}
+```
