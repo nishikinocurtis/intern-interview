@@ -206,6 +206,8 @@ func BaseSync02() {
 }
 ```
 
+Mutex实现中有两种模式，**1：正常模式，2：饥饿模式**，前者指的是当一个协程获取到锁时，后面的协程会排队(FIFO),释放锁时会唤醒最早排队的协程，这个协程会和正在CPU上运行的协程竞争锁，但是大概率会失败，为什么呢？因为你是刚被唤醒的，还没有获得CPU的使用权，而CPU正在执行的协程肯定比你有优势，如果这个被唤醒的协程竞争失败，并且超过了1ms，那么就会退回到后者(饥饿模式)，这种模式下，该协程在下次获取锁时直接得到,不存在竞争关系，本质是为了防止协程等待锁的时间太长。
+
 **读写锁 snyc.RWMutex**
 
 所谓读协程snyc.RWMutex，实现业务中对资源一写多读的情况 ，如对数据库读写，为保证数据原子性，同一时间只允许一个协程写资源，禁止其他写入或读取，或同一时间允许多个协程读取资源，但禁止任何协程写入。
@@ -298,23 +300,6 @@ Processor，表示逻辑处理器， 对G来说，P相当于CPU核，G只有绑�
 
 
 
-## 锁
-
-Go的代码库中为开发人员提供了一下两种锁：
-
-1. 互斥锁 sync.Mutex
-2. 读写锁 sync.RWMutex
-
-第一个互斥锁指的是在Go编程中，同一资源的锁定对各个协程是相互排斥的，当其中一个协程获取到该锁时，其它协程只能等待，直到这个获取锁的协程释放锁之后，其它的协程才能获取。
-
-第二个读写锁依赖于互斥锁的实现，这个指的是当多个协程对某一个资源都是只读操作，那么多个协程可以获取该资源的读锁，并且互相不影响，但当有协程要修改该资源时就必须获取写锁，如果获取写锁时，已经有其它协程获取了读写或者写锁，那么此次获取失败，也就是说读写互斥，读读共享，写写互斥。
-
-**实现原理**
-
-Mutex实现中有两种模式，**1：正常模式，2：饥饿模式**，前者指的是当一个协程获取到锁时，后面的协程会排队(FIFO),释放锁时会唤醒最早排队的协程，这个协程会和正在CPU上运行的协程竞争锁，但是大概率会失败，为什么呢？因为你是刚被唤醒的，还没有获得CPU的使用权，而CPU正在执行的协程肯定比你有优势，如果这个被唤醒的协程竞争失败，并且超过了1ms，那么就会退回到后者(饥饿模式)，这种模式下，该协程在下次获取锁时直接得到,不存在竞争关系，本质是为了防止协程等待锁的时间太长。
-
-
-
 ## Go GC
 
 [图解Golang的GC算法 - Go语言中文网 - Golang中文社区 (studygolang.com)](https://studygolang.com/articles/18850?fr=sidebar)
@@ -352,41 +337,131 @@ Mutex实现中有两种模式，**1：正常模式，2：饥饿模式**，前者
 
 
 
-## Go 双线程打印奇偶
+## 打印 1~100
+
+### 双携程
 
 ```go
 package main
 
-import "fmt"
+import (
+	"fmt"
+	"sync"
+)
 
 func main() {
-	ch1 := make(chan string)
-	ch2 := make(chan string)
-	end := make(chan string)
-    //线程A
+	ch1 := make(chan struct{})
+	ch2 := make(chan struct{})
+	wg := sync.WaitGroup{}
+	wg.Add(2)
+	//线程A
 	go func() {
-		for i := 0; i < 100; i += 2 {
+		defer wg.Done()
+		for i := 1; i <= 99; i += 2 {
 			//等待 B 来唤醒
 			<-ch2
 			fmt.Println(i, "A")
 			//唤醒 B
-			ch1 <- "print A"
+			ch1 <- struct{}{}
 		}
 	}()
-    //线程B
+	//线程B
 	go func() {
+		defer wg.Done()
 		//首先唤醒 A
-		ch2 <- "begin"
-		for i := 1; i < 99; i += 2 {
+		ch2 <- struct{}{}
+		for i := 2; i <= 100; i += 2 {
 			//等待 A 来唤醒
 			<-ch1
 			fmt.Println(i, "B")
-			//唤醒 A
-			ch2 <- "print B"
+			//唤醒 A，执行到最后一次时不需要再唤醒
+			if i != 100 {
+				ch2 <- struct{}{}
+			}
 		}
-		end <- "end"
 	}()
-    
-	<-end
+	wg.Wait()
 }
 ```
+
+
+
+### 多协程打印 1~100
+
+```go
+package main
+
+import (
+	"fmt"
+	"strconv"
+)
+
+var (
+	target   = 100 // 要输出的最大值
+	chCount  = 4
+	curLine  = 0 // 通道发送计数器
+	exit     = make(chan bool)
+	channels []chan int // 协程切片
+)
+
+func main() {
+	// 开启 n 个协程
+	channels = make([]chan int, chCount)
+	for i := 0; i < chCount; i++ {
+		channels[i] = make(chan int)
+	}
+
+	// 多协程启动入口
+	go ChanWork(channels[0])
+
+	// 触发协程同步执行
+	channels[0] <- 1
+
+	// 执行结束
+	if <-exit {
+		return
+	}
+}
+
+func ChanWork(c chan int) {
+	for {
+		// count为输出计数器
+		if count := <-channels[curLine]; count <= target {
+			fmt.Println("channel "+strconv.Itoa(curLine)+" -> ", count)
+			count++
+
+			// 下一个发送通道
+			curLine++
+			if curLine >= chCount {
+				curLine = 0 //循环，防止索引越界
+			}
+			go ChanWork(channels[curLine])
+			channels[curLine] <- count
+
+		} else {
+			// 通道编号问题处理
+			id := 0
+			if curLine == 0 {
+				id = chCount - 1
+			} else {
+				id = curLine - 1
+			}
+			fmt.Println("在通道" + strconv.Itoa(id) + "执行完成")
+			close(exit)
+			return
+		}
+	}
+}
+```
+
+
+
+## 空结构
+
+空结构（struct{}）是指没有字段的结构类型。他比较特殊，因为无论是其自身，还是作为数组元素类型，其长度都为零。
+
+尽管没有分配数组内存，但是依然可以读写元素，对应的切片 len、cap 属性也都正常。
+
+实际上，这类 “长度” 为零的对象通常都指向 runtime.zerobase 变量。
+
+空结构可作为通道元素类型，用于事件通知。

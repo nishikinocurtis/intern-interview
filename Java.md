@@ -74,6 +74,15 @@ Byte（字节型）、short（短整型）、char（字符型） 、int（整型
 
 
 
+**区别**
+
+- 基本类型只能按值传递，封装类按引用传递
+- 基本类型在堆栈上分配，对象在堆上分配（对象的引用在堆栈上创建）
+  - 基本类型的局部变量在栈上分配，对象的成员变量在堆上分配
+- 封装类可以更方便的使用一些基本类型不具备的方法
+
+
+
 **==和equals**
 
 - ==
@@ -463,7 +472,11 @@ Java虚拟机的多线程是通过线程轮流切换并分配处理器执行时�
 
 ## HashMap
 
-在JDK1.6，JDK1.7中，HashMap采用位桶+链表实现，即使用链表处理冲突，同一hash值的链表都存储在一个链表里。但是当位于一个桶中的元素较多，即hash值相等的元素较多时，通过key值依次查找的效率较低。而JDK1.8中，HashMap采用位桶+链表+红黑树实现，当链表长度超过阈值（8）时，将链表转换为红黑树，这样大大减少了查找时间。
+[图解 HashMap 源码——逐行分析源码，面试再也不怕被问HashMap了_every__day的博客-CSDN博客](https://blog.csdn.net/every__day/article/details/114118922)
+
+在JDK1.6，JDK1.7中，HashMap采用位桶+链表实现，即使用链表处理冲突，同一hash值的链表都存储在一个链表里。但是当位于一个桶中的元素较多，即hash值相等的元素较多时，通过key值依次查找的效率较低。
+
+而JDK1.8中，HashMap采用位桶+链表+红黑树实现，当数组长度大于等于64，且链表长度大于8，将链表转换为红黑树，这样大大减少了查找时间。
 
 首先有一个数组，当添加一个元素（key-value）时，就首先计算元素key的hash值，以此确定插入数组中的位置，但是可能存在同一hash值的元素已经被放在数组同一位置了，这时就添加到同一hash值的元素的后面，他们在数组的同一位置，但是形成了链表，同一各链表上的Hash值是相同的，所以说数组存放的是链表。而当链表长度太长时，链表就转换为红黑树，这样大大提高了查找的效率。
 
@@ -487,7 +500,17 @@ Java虚拟机的多线程是通过线程轮流切换并分配处理器执行时�
 
 
 
-**线程不安全**
+**为什么不使用 AVL 树**
+
+AVL 树是平衡树，在查找时效率比红黑树高一点。
+
+红黑树是近似平衡的树，在维护平衡的成本上，要比AVL树要低。
+
+所以红黑树的插入、删除、查找等各种操作的性能都比较稳定。
+
+
+
+### 线程不安全
 
 HashMap 的线程不安全最主要是体现在扩容和插入中，这里又分为 JDK7 和 JDK8 两种情况。
 
@@ -518,13 +541,62 @@ Hashtable是线程安全的，多个线程可以共享一个Hashtable。
 
 ## ConcurrentHashMap
 
+[java-并发-ConcurrentHashMap高并发机制-jdk1.8_阿里Darker-CSDN博客](https://blog.csdn.net/jianghuxiaojin/article/details/52006118)
+
+[图解 ConCurrentHashMap ——从源码层面，弄清楚它是怎么控制并发的_every__day的博客-CSDN博客](https://blog.csdn.net/every__day/article/details/114293107)
+
+[ConCurrentHashMap并发环境时，如何计数的？—— sumCount()、fullAddCount()_every__day的博客-CSDN博客_concurrenthashmap计数](https://blog.csdn.net/every__day/article/details/115030000)
+
 ConcurrentHashMap 1.8 采用Node + CAS + Synchronized来保证并发安全进行实现，采用table数组＋链表＋红黑树的存储结构。以table数组元素作为锁，利用CAS+Synchronized来保证并发更新的安全，从而实现了对每个数组元素（Node）进行加锁，进一步减少并发冲突的概率。ConcurrentHashMap可以做到读取数据不加锁，并且其内部的结构可以让其在进行写操作的时候能够将锁的粒度保持地尽量地小，允许多个修改操作并发进行。
 
 <img src="https://img-blog.csdnimg.cn/20200409211332776.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzQzMjUzMTIz,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述"  />
 
 
 
-**原理**
+### 区别
+
+- key 和 value 均不能为空
+
+
+
+### 内部类
+
+
+
+#### Node
+
+Node 是最核心的内部类，它包装了 key-value 键值对，所有插入 ConcurrentHashMap 的数据都包装在这里面。
+
+- 这个 Node 内部类与 HashMap 中定义的 Node 类很相似，但是有一些差别，
+-   它对 value 和 next 属性设置了 **volatile** 同步锁 
+-   它不允许调用 setValue 方法直接改变 Node 的 value 域 
+-   它增加了 find 方法辅助 map.get() 方法 
+
+
+
+#### TreeNode
+
+树节点类，另外一个核心的数据结构。当链表长度过长的时候，会转换为 TreeNode。但是与 HashMap 不相同的是，它并不是直接转换为红黑树，而是把这些结点包装成 TreeNode 放在 TreeBin 对象中，由 TreeBin 完成对红黑树的包装。
+
+而且 TreeNode 在 ConcurrentHashMap 集成自 Node 类，而并非 HashMap 中的集成自 LinkedHashMap.Entry<K,V> 类，也就是说 TreeNode 带有 next 指针，这样做的目的是方便基于 TreeBin 的访问。
+
+
+
+#### TreeBin
+
+这个类并不负责包装用户的 key、value 信息，而是包装的很多 TreeNode 节点。它代替了TreeNode 的根节点，也就是说在实际的 ConcurrentHashMap “数组” 中，存放的是 TreeBin 对象，而不是 TreeNode 对象，这是与 HashMap 的区别。另外这个类还带有了读写锁。
+
+这里仅贴出它的构造方法。可以看到在构造 TreeBin 节点时，仅仅指定了它的 hash 值为 TREEBIN 常量，这也就是个标识为。同时也看到我们熟悉的红黑树构造方法。
+
+
+
+#### ForwardingNode
+
+一个用于连接两个 table 的节点类。它包含一个 nextTable 指针，用于指向下一张表。而且这个节点的 key value next 指针全部为 null，它的 hash 值为 -1。这里面定义的 find 的方法是从 nextTable 里进行查询节点，而不是以自身为头节点进行查找
+
+
+
+### CAS
 
 JDK8中ConcurrentHashMap参考了JDK8 HashMap的实现，采用了数组+链表+红黑树的实现方式来设计，内部大量采用CAS操作。
 
@@ -532,7 +604,53 @@ CAS是compare and swap的缩写，即我们所说的比较交换。cas是一种�
 
 乐观锁总是假设最好的情况，每次去拿数据的时候都认为别人不会修改，所以不会上锁，但是在更新的时候会判断一下在此期间别人有没有去更新这个数据，可以使用版本号机制和CAS算法实现。乐观锁适用于多读的应用类型，这样可以提高吞吐量。
 
-CAS 操作包含三个操作数 —— 内存位置（V）、预期原值（A）和新值(B)。如果内存地址里面的值和A的值是一样的，那么就将内存里面的值更新成B。CAS是通过无限循环来获取数据的，若果在第一轮循环中，a线程获取地址里面的值被b线程修改了，那么a线程需要自旋，到下次循环才有可能机会执行。
+CAS 操作包含三个操作数 —— 内存位置（V）、预期原值（A）和新值(B)。如果内存地址里面的值和A的值是一样的，那么就将内存里面的值更新成B。CAS是通过自旋来获取数据的，若果在第一轮循环中，a线程获取地址里面的值被b线程修改了，那么a线程需要自旋，到下次循环才有可能机会执行。
+
+
+
+### 计数
+
+对于 ConcurrentHashMap 来说，这个 table 里到底装了多少东西其实是个不确定的数量，因为不可能在调用 size() 方法的时候像 GC 的 “stop the world” 一样让其他线程都停下来让你去统计，因此只能说这个数量是个估计值。对于这个估计值，ConcurrentHashMap 也是大费周章才计算出来的。
+
+计数的方法有 size 和 mappingSize，而这两个方法都是调用 sumCount 方法。
+
+- size 返回 int，是将 long 强转为 int
+- mappingSize 返回 long，可计数的范围更大
+
+sumCount 统计 baseCount 和各个 CounterCell 的和。
+
+```java
+final long sumCount() {                      
+    CounterCell[] as = counterCells;         
+    CounterCell a;                           
+    long sum = baseCount;                    
+    if (as != null) {                        
+        for (int i = 0; i < as.length; ++i) {
+            if ((a = as[i]) != null)         
+                sum += a.value;              
+        }                                    
+    }                                        
+    return sum;                              
+}                                            
+```
+
+
+
+计数时，要么修改了 `baseCount`，要么 修改了 `CounterCell` 对象中 `value` 的值。
+
+在 put 和 remove 中，都调用了 addCount 这个方法。这个的一个重要功能就是计数。
+
+#### 总结
+
+- 无竞争条件下，执行 put() 方法时，操作 baseCount 实现计数
+- 首次竞争条件下，执行 put() 方法，会初始化 CounterCell ，并实现计数
+- CounterCell 一旦初始化，计数就优先使用 CounterCell
+- 每个线程，要么修改 CounterCell、要么修改 baseCount，实现计数
+- CounterCell 在竞争特别严重时，会扩容。（扩容上限与 CPU 核数有关，不会一直扩容）
+
+
+
+
 
 
 
