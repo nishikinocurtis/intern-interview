@@ -1,20 +1,3 @@
----
-title: 剑指Offer 汇总
-tags:
-  - 算法
-  - cpp
-categories:
-  - 剑指Offer
-abbrlink: 7f86
-date: 2022-03-17 19:20:46
----
-
-
-
-剑指Offer 汇总
-
-<!--more-->
-
 ## 链表
 
 ### [剑指 Offer 06. 从尾到头打印链表](https://leetcode-cn.com/problems/cong-wei-dao-tou-da-yin-lian-biao-lcof/)

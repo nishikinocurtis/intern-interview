@@ -1,19 +1,3 @@
----
-title: SQL练习题
-tags:
-  - sqss
-abbrlink: '2815'
-date: 2022-03-02 22:12:47
----
-
-
-
-
-
-SQL练习题
-
-<!--more-->
-
 转载自：
 
 [经典SQL练习题(MySQL版)_廖致君的博客-CSDN博客_mysql练习](https://blog.csdn.net/paul0127/article/details/82529216)
