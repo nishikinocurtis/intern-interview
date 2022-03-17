@@ -418,6 +418,8 @@ wait-for-graph 要求数据库保存以下两种信息：
 
 ## 聚集索引与非聚集索引
 
+<img src="https://img-blog.csdn.net/20180609171049102" alt="img" style="zoom:150%;" />
+
 - 聚集索引
   - 主键索引
 - 非聚集索引
@@ -549,6 +551,14 @@ InnoDB的辅助索引data域存储相应记录主键的值而不是地址。换�
 
 
 
+## 主键过长
+
+首先，存储表中各个数据行的聚集索引逻辑结构，在物理表现上，是将各个行按主键值顺序插入到各个索引数据页当中；
+
+其次，受限于一个数据页能够存储的数据行大小的限制，无论是聚集索引还是二级索引数据页，如果主键长度设定的过长，都将会导致数据页分裂，尤其是索引树的非叶子节点数据页和二级索引的叶子节点数据页，使得数据页内部能够存储的记录数量变少；每个页能储存的节点指针变少，使树高增加。
+
+从而，使得查找遍历数据时，不得不在相对更多的数据页中进行查找，增加了装载数据页的耗时和比较主键key的次数，降低了效率。
+
 
 
 ## 索引的结构优化
@@ -663,6 +673,73 @@ MySQL 前缀索引能有效减小索引文件的大小，提高索引的速度�
 6.where中索引列使用了函数;
 
 7.如果mysql觉得全表扫描更快时（数据少）;
+
+
+
+## 查询过程
+
+[MySQL数据库：SQL语句的执行过程_张维鹏的博客-CSDN博客_数据库执行sql语句](https://blog.csdn.net/a745233700/article/details/113927318)
+
+![img](https://img-blog.csdnimg.cn/img_convert/5b2c927e341c730c33a3ed41eb353691.png)
+
+![img](https://img-blog.csdnimg.cn/img_convert/3ca1c9259d8a63cc1b8563e8207b1cef.png)
+
+（1）首先 MySQL 执行器根据执行计划调用存储引擎的API查询数据
+
+（2）存储引擎先从缓存池 buffer pool 中查询数据，如果没有就会去磁盘中查询，如果查询到了就将其放到缓存池中
+
+（3）在数据加载到 Buffer Pool 的同时，会将这条数据的相反操作保存到 undo log 日志文件中
+
+（4）innodb 会在 Buffer Pool 中执行更新操作
+
+（5）更新后的数据会记录在 redo log buffer 中
+
+（6）提交事务在提交的同时会做以下三件事
+
+（7）（第一件事）将 redo log buffer 中的数据刷入到redo log文件中
+
+（8）（第二件事）将本次操作记录写入到 bin log 文件中
+
+（9）（第三件事）将bin log文件名字和更新内容在 bin log 中的位置记录到redo log中，同时在 redo log 最后添加 commit 标记
+
+（10）使用一个后台线程，它会在某个时机将我们Buffer Pool中的更新后的数据刷到 MySQL 数据库中，这样就将内存和数据库的数据保持统一了
+
+
+
+
+
+## join
+
+![img](https://iknow-pic.cdn.bcebos.com/a5c27d1ed21b0ef4d0a550cfd1c451da80cb3ed6?x-bce-process%3Dimage%2Fresize%2Cm_lfit%2Cw_600%2Ch_800%2Climit_1%2Fquality%2Cq_85%2Fformat%2Cf_jpg)
+
+- 内连接(inner join…on…)
+- 全外连接（full join…on…)
+- 左连接（left join…on…)
+- 右连接（right join…on…)
+- 交叉连接(cross join …on…)
+
+ 
+
+### join原理
+
+MySQL是只支持一种JOIN算法Nested-Loop Join（嵌套循环链接）
+
+1.Simple Nested-Loop Join：
+如下图，r为驱动表，s为匹配表，可以看到从r中分别取出r1、r2、......、rn去匹配s表的左右列，然后再合并数据，对s表进行了rn次访问，对数据库开销大
+
+![img](https://pic1.zhimg.com/80/v2-f4c193fa226d835105b46c38bcb881e0_1440w.jpg)
+
+2.Index Nested-Loop Join（索引嵌套）：
+这个要求非驱动表（匹配表s）上有索引，可以通过索引来减少比较，加速查询。
+在查询时，驱动表（r）会根据关联字段的索引进行查找，当在索引上找到符合的值，再回表进行查询，也就是只有当匹配到索引以后才会进行回表查询。
+如果非驱动表（s）的关联健是主键的话，性能会非常高，如果不是主键，要进行多次回表查询，先关联索引，然后根据二级索引的主键ID进行回表操作，性能上比索引是主键要慢。
+
+![img](https://pic2.zhimg.com/80/v2-e27563bc545778bba1c1bc25f2a8c491_1440w.jpg)
+
+3.Block Nested-Loop Join：
+如果有索引，会选取第二种方式进行join，但如果join列没有索引，就会采用Block Nested-Loop Join。可以看到中间有个join buffer缓冲区，是将驱动表的所有join相关的列都先缓存到join buffer中，然后批量与匹配表进行匹配，将第一种多次比较合并为一次，降低了非驱动表（s）的访问频率。默认情况下join_buffer_size=256K，在查找的时候MySQL会将所有的需要的列缓存到join buffer当中，包括select的列，而不是仅仅只缓存关联列。在一个有N个JOIN关联的SQL当中会在执行时候分配N-1个join buffer。
+
+![img](https://pic3.zhimg.com/80/v2-4984f2db35c259998ad2a86008ec8f06_1440w.jpg)
 
 
 

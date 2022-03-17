@@ -555,6 +555,8 @@ Redis配置文件中可以设置maxmemory，内存的最大使用量，到达限
 
 ## 缓存问题
 
+[Redis缓存穿透、缓存雪崩、redis并发问题 并发竞争key的解决方案 (阿里) - aspirant - 博客园 (cnblogs.com)](https://www.cnblogs.com/aspirant/p/11456850.html)
+
 **缓存雪崩**
 
 缓存数据**设置的过期时间相同**，且Redis将这部分数据全部删光了。这就会导致在这段时间内，这些缓存**同时失效**，全部请求到数据库中。

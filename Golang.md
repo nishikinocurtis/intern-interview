@@ -36,123 +36,7 @@ slice能够通过函数传参后，修改对应的数组值，是因为slice内�
 
 ## channel
 
-**特点**
-
-1.通道是有类型的，基于go的基本数据类型
-
-2.通道是有方向的，可从通道读出数据，可向通道写入数据。当通道被传递时可设置其读写方向
-
-3.通道是有缓存的，通过缓存容量可控制协程间的阻塞
-
-4.通道是可关闭的，且只能被关闭一次，通道也是资源，如果不使用应关闭
-
-**使用常识**
-
-1.通道数据读写,通道写入数据后必须关闭；
-
-2.从一个已经关闭的通道中读取数据,读完了之后,继续读会读到其通道类型的零值；
-
-3.没有初始化的通道被关闭会报panic;
-
-4.读取通道数据时应校验其有效性；
-
-5.关闭通道时会产出一个广播，所有从通道读取数据的协程都会收到消息；
-
-6.被遍历的通道如果没有收到通道被关闭的广播，遍历会一直被阻塞；
-
-7.通道一般在写入协程处调用关闭，写只有一个写入协程的情况，通道被关闭后不能写入数据，但其他协程可以读出，注意重复关闭的情况；
-
-**通道的读写和异常**
-
-关闭通道的几个注意事项：
-
-- 不能关闭一个没有初始化的通道
-- 通道不能重复关闭
-- 不能往已经关闭的通道中写入数据,但是可以从中读数据
-
-**无缓存的通道**
-
-> 使用一个无缓存的通道时应该注意，它是阻塞的：
-
-- 没人读就永远写不进(阻塞)
-- 没人写就永远读不出(阻塞)
-
-**有缓存的通道**
-
-可利用通道缓存能力进行协程调度，通道的元素个数或称缓存能力，决定协程是否产生阻塞，若通道数据已满则阻塞，写入阻塞读出也阻塞，这是相互的。
-
-**select选择通道，协程多路复用**
-
-select关键字是go特有的，其主要用于配合通道实现多路复用。
-
-```go
-func BaseChanner05() {
-    //创建三个通道
-    ch1 := make(chan int, 3)
-    ch2 := make(chan int, 4)
-    ch3 := make(chan int, 5)
-
-    //创建3条协程
-    go func(c chan int) {
-        ticker := time.NewTicker(time.Second * 1)
-        for {
-            <-ticker.C
-            c <- 1
-        }
-    }(ch1)
-    go func(c chan int) {
-        ticker := time.NewTicker(time.Second * 2)
-        for {
-            <-ticker.C
-            c <- 2
-        }
-    }(ch2)
-    go func(c chan int) {
-        ticker := time.NewTicker(time.Second * 3)
-        for {
-            <-ticker.C
-            c <- 3
-        }
-    }(ch3)
-
-    //time.Sleep(time.Second)
-    //主协程select多路复用,for不断获取不同通道的数据，随先来则优先处理谁。
-    for {
-        select {
-        case chV1, ok := <-ch1:
-            fmt.Printf("通道ch1输出：%v,有效性%v\n", chV1, ok)
-        case chV2, ok := <-ch2:
-            fmt.Printf("通道ch2输出：%v,有效性%v\n", chV2, ok)
-        case chV3, ok := <-ch3:
-            fmt.Printf("通道ch3输出：%v,有效性%v\n", chV3, ok)
-    }
-}
-```
-
-**通过容量控制并发数**
-
-```go
-func BaseChanner06() {
-    //创建一个容量为5的通道，无论协程开多少，控制每次5条并发
-    semaphore := make(chan int, 5)
-
-    for i := 1; i <= 100; i++ {
-        go func(c chan int, n int) {
-            for {
-                c <- i //抢通道写入,抢不到则阻塞
-                fmt.Println("协程", n, "抢到通道")
-                time.Sleep(time.Second)
-                <-c //做完操作后自己读出,空出容量
-            }
-        }(semaphore, i)
-    }
-
-    for {
-        time.Sleep(time.Second)
-    }
-
-}
-```
+channel 是一个引用类型，所以在它被初始化之前，它的值是 nil，channel 使用 make 函数进行初始化。可以向它传递一个 int 值，代表 channel 缓冲区的大小（容量），构造出来的是一个缓冲型的 channel；不传或传 0 的，构造的就是一个非缓冲型的 channel。
 
 
 
@@ -451,6 +335,83 @@ func ChanWork(c chan int) {
 			return
 		}
 	}
+}
+```
+
+
+
+## 多线程向两个账户中打款
+
+### 通道
+
+```go
+package main
+
+import (
+	"fmt"
+	"sync"
+)
+
+func main() {
+	wg := sync.WaitGroup{}
+	account := [2]int{}
+	ch0 := make(chan int, 1)
+	ch1 := make(chan int, 1)
+	ch0 <- 0
+	ch1 <- 1
+	routineNumber := 1000
+	wg.Add(routineNumber)
+	for i := 0; i < routineNumber; i++ {
+		go func() {
+			defer wg.Done()
+			select {
+			case num := <-ch0:
+				account[num]++
+				ch0 <- num
+			case num := <-ch1:
+				account[num]++
+				ch1 <- num
+			}
+		}()
+	}
+	wg.Wait()
+	fmt.Println(account)
+}
+```
+
+### 互斥锁
+
+```go
+package main
+
+import (
+	"fmt"
+	"sync"
+)
+
+func main() {
+	wg := sync.WaitGroup{}
+	mutex0 := sync.Mutex{}
+	mutex1 := sync.Mutex{}
+	account := [2]int{}
+	routineNumber := 1000
+	wg.Add(routineNumber)
+	for i := 0; i < routineNumber; i++ {
+		go func(i int) {
+			defer wg.Done()
+			if i%2 == 0 {
+				mutex0.Lock()
+				account[0]++
+				mutex0.Unlock()
+			} else {
+				mutex1.Lock()
+				account[1]++
+				mutex1.Unlock()
+			}
+		}(i)
+	}
+	wg.Wait()
+	fmt.Println(account)
 }
 ```
 
