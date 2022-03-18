@@ -501,6 +501,10 @@ public:
 
 ### [剑指 Offer 52. 两个链表的第一个公共节点](https://leetcode-cn.com/problems/liang-ge-lian-biao-de-di-yi-ge-gong-gong-jie-dian-lcof/)
 
+给你两个单链表的头节点 `headA` 和 `headB` ，请你找出并返回两个单链表相交的起始节点。如果两个链表没有交点，返回 `null` 。
+
+**题解**
+
 本题运用双指针。
 
 > 怎么让两个速度相同，跑道不同的人相遇？
@@ -514,10 +518,6 @@ public:
 从A出发的指针pA走完时，长度为A+C，相对的，pB走完时长度为B+C。
 
 这时交换他们的跑道，pA走A+C+B，pB走B+C+A，因他们速度相同，要么在交点相遇，要么都走到空节点，此时返回他们指向的节点即可。
-
-
-
-**代码**
 
 ```c++
 /**
@@ -707,13 +707,13 @@ public:
 
 ### [剑指 Offer 32 - II. 从上到下打印二叉树 II](https://leetcode-cn.com/problems/cong-shang-dao-xia-da-yin-er-cha-shu-ii-lcof/)
 
+从上到下按层打印二叉树，同一层的节点按从左到右的顺序打印，每一层打印到一行。
 
+**题解**
 
 层序遍历我们一般使用队列，从左向右遍历时，将下一层的节点加入队列。
 
 此题需要我们进行分层，我们便在while语句中进一步用for来细化各层，将开启每一层时队列的大小当作循环条件。
-
-**代码**
 
 ```c++
 /**
@@ -754,7 +754,9 @@ public:
 
 ### [剑指 Offer 32 - III. 从上到下打印二叉树 III](https://leetcode-cn.com/problems/cong-shang-dao-xia-da-yin-er-cha-shu-iii-lcof/)
 
+请实现一个函数按照之字形顺序打印二叉树，即第一行按照从左到右的顺序打印，第二层按照从右到左的顺序打印，第三行再按照从左到右的顺序打印，其他行以此类推。
 
+**题解**
 
 我们将奇数层和偶数层的操作分开。
 
@@ -762,8 +764,6 @@ level从0开始计数。
 
 - 奇数层：队首读，队尾入。
 - 偶数层：队尾读，队首入。
-
-**代码**
 
 ```c++
 /**
@@ -812,8 +812,6 @@ public:
     }
 };
 ```
-
-
 
 
 
@@ -1392,9 +1390,13 @@ public:
 
 ### [剑指 Offer 68 - II. 二叉树的最近公共祖先](https://leetcode-cn.com/problems/er-cha-shu-de-zui-jin-gong-gong-zu-xian-lcof/)
 
-DFS
+给定一个二叉树, 找到该树中两个指定节点的最近公共祖先。
 
-**代码**
+百度百科中最近公共祖先的定义为：“对于有根树 T 的两个结点 p、q，最近公共祖先表示为一个结点 x，满足 x 是 p、q 的祖先且 x 的深度尽可能大（一个节点也可以是它自己的祖先）。”
+
+**题解**
+
+DFS
 
 ```c++
 /**
@@ -1409,11 +1411,19 @@ DFS
 class Solution {
 public:
     TreeNode *lowestCommonAncestor(TreeNode *root, TreeNode *p, TreeNode *q) {
-        if (root == nullptr || root == p || root == q) return root;
+        //为空或者找到节点
+        if (root == nullptr || root == p || root == q)
+            return root;
         TreeNode *left = lowestCommonAncestor(root->left, p, q);
         TreeNode *right = lowestCommonAncestor(root->right, p, q);
-        if (left == nullptr) return right;
-        if (right == nullptr) return left;
+        //左右为空，返回空
+        //左子树找不到，说明公共祖先在右边
+        if (!left)
+            return right;
+        //右子树找不到，说明公共祖先在左边
+        if (!right)
+            return left;
+        //左右都能找到节点，说明当前是公共祖先
         return root;
     }
 };
@@ -2541,6 +2551,75 @@ public:
             return ' ';
         else
             return queue.front();
+    }
+};
+```
+
+
+
+## 数学
+
+### [剑指 Offer 39. 数组中出现次数超过一半的数字](https://leetcode-cn.com/problems/shu-zu-zhong-chu-xian-ci-shu-chao-guo-yi-ban-de-shu-zi-lcof/)
+
+数组中有一个数字出现的次数超过数组长度的一半，请找出这个数字。
+
+你可以假设数组是非空的，并且给定的数组总是存在多数元素。
+
+**题解**
+
+投票法。
+
+```c++
+class Solution {
+public:
+    int majorityElement(vector<int> &nums) {
+        int ans = nums[0], cnt = 1;
+        for (int i = 1; i < nums.size(); i++) {
+            if (nums[i] != ans)
+                cnt--;
+            else
+                cnt++;
+            if (cnt == 0) {
+                ans = nums[i];
+                cnt++;
+            }
+        }
+        return ans;
+    }
+};
+```
+
+
+
+### [剑指 Offer 66. 构建乘积数组](https://leetcode-cn.com/problems/gou-jian-cheng-ji-shu-zu-lcof/)
+
+给定一个数组 `A[0,1,…,n-1]`，请构建一个数组 `B[0,1,…,n-1]`，其中 `B[i]` 的值是数组 `A` 中除了下标 `i` 以外的元素的积, 即 `B[i]=A[0]×A[1]×…×A[i-1]×A[i+1]×…×A[n-1]`。不能使用除法。
+
+ 
+
+**题解**
+
+动态规划。
+
+![Picture1.png](https://pic.leetcode-cn.com/1624619180-vpyyqh-Picture1.png)
+
+```c++
+class Solution {
+public:
+    vector<int> constructArr(vector<int> &a) {
+        int len = a.size();
+        if (len == 0) return {};
+        vector<int> b(len, 1);
+        b[0] = 1;
+        int tmp = 1;
+        for (int i = 1; i < len; i++) {
+            b[i] = b[i - 1] * a[i - 1];
+        }
+        for (int i = len - 2; i >= 0; i--) {
+            tmp *= a[i + 1];
+            b[i] *= tmp;
+        }
+        return b;
     }
 };
 ```

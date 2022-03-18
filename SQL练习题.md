@@ -66,6 +66,45 @@ insert into Teacher values('03' , '王五');
 
 ## 题目
 
+### 关注数据库查询设计
+
+自增主键、用户 id、用户关注的人 id
+
+**查询用户关注的人**
+
+```mysql
+select followed_id
+from follow
+where me_id = 1
+```
+
+**查询用户的粉丝**
+
+```mysql
+select me_id
+from follow
+where followed_id = 3
+```
+
+**查询互关的人**
+
+```mysql
+select a.followed_id
+from follow as a
+         inner join follow as b
+                    on a.followed_id = b.me_id and b.followed_id = a.me_id
+where a.me_id = 2
+```
+
+**查询用户粉丝数和关注数**
+
+```mysql
+SELECT (SELECT COUNT(followed_id) as count FROM follow WHERE followed_id = 1) as Followers
+     , (SELECT COUNT(me_id) as count FROM follow WHERE me_id = 1)             as Following
+```
+
+
+
 ### 行转列
 
 子查询

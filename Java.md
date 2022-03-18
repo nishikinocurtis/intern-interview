@@ -1188,6 +1188,65 @@ TLAB本质上还是在 Java 堆中的，所以在 TLAB 区域的对象，也可�
 
 
 
+### 死锁案例
+
+```java
+public class DeadLock {
+    public static String obj1 = "obj1";
+    public static String obj2 = "obj2";
+
+    public static void main(String[] args) {
+        Thread a = new Thread(new Lock1());
+        Thread b = new Thread(new Lock2());
+        a.start();
+        b.start();
+    }
+}
+
+class Lock1 implements Runnable {
+    @Override
+    public void run() {
+        try {
+            System.out.println("Lock1 running");
+            while (true) {
+                synchronized (DeadLock.obj1) {
+                    System.out.println("Lock1 lock obj1");
+                    //获取obj1后先等一会儿，让Lock2有足够的时间锁住obj2
+                    Thread.sleep(3000);
+                    synchronized (DeadLock.obj2) {
+                        System.out.println("Lock1 lock obj2");
+                    }
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+}
+
+class Lock2 implements Runnable {
+    @Override
+    public void run() {
+        try {
+            System.out.println("Lock2 running");
+            while (true) {
+                synchronized (DeadLock.obj2) {
+                    System.out.println("Lock2 lock obj2");
+                    Thread.sleep(3000);
+                    synchronized (DeadLock.obj1) {
+                        System.out.println("Lock2 lock obj1");
+                    }
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+}
+```
+
+
+
 ## 集合
 
 
@@ -1283,9 +1342,9 @@ ArrayList的扩容主要发生在向ArrayList集合中添加元素的时候。�
 
 红黑树平均查找长度是 log(n) ，链表平均查找长度是 n/2 。
 
-当 n<8 时，平均查找长度相近，但是红黑树的插入插入删除时的旋转开销都较大，节点占用的空间较大。所以选择使用链表。
+当 n<8 时，平均查找长度相近，但是红黑树的插入删除时的旋转开销都较大，节点占用的空间较大。所以选择使用链表。
 
-当 n=8 时，平均查找长度有了较显著的差别，这时转化为树才有了意义。
+当 n>8 时，平均查找长度有了较显著的差别，这时转化为树才有了意义。
 
 所以说这种策略也是一种时间和空间上的妥协。
 
@@ -1293,7 +1352,7 @@ ArrayList的扩容主要发生在向ArrayList集合中添加元素的时候。�
 
 #### 扩容
 
-即当前数组的长度乘以加载因子（默认0.75）的值的时候，就要自动扩容。
+即当前元素数量超过数组的长度乘以加载因子（默认0.75）的值的时候，就要自动扩容。
 
 初始化后首次插入数据时，先发生 resize 扩容再插入数据。之后每当插入的数据到达阈值时就会发生 resize ，这时是先插入数据再 resize 。
 

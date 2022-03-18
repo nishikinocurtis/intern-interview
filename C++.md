@@ -37,3 +37,20 @@ priority_queue<int, vector<int>, greater<int>> minHeap;
 任何数和其自身做异或运算，结果是 0。
 
 异或运算满足交换律和结合律。
+
+
+
+## 随机数
+
+随机整数
+
+```c++
+rand()
+```
+
+随机 0 ~ n 的整数
+
+```c++
+rand() % n
+```
+
