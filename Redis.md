@@ -53,7 +53,13 @@
 
 ## 数据类型
 
+[Redis详解（五）------ redis的五大数据类型实现原理 - YSOcean - 博客园 (cnblogs.com)](https://www.cnblogs.com/ysocean/p/9102811.html)
+
+
+
 ### string
+
+简单动态字符串（SDS）
 
 string 是Redis的最基本的数据类型，可以理解为与 Memcached 一模一样的类型，一个key 对应一个 value。string 类型是二进制安全的，意思是 Redis 的 string 可以包含任何数据，比如图片或者序列化的对象。
 
@@ -87,6 +93,8 @@ redis是单线程模型，一个命令执行完才会执行下一个，同时数
 
 ### hash
 
+ziplist或hashtable
+
 hash 是一个键值对集合，是一个 string 类型的 key和 value 的映射表，key 还是key，但是value是一个键值对（key-value）。类比于 Java里面的 Map<String,Map<String,Object>> 集合。
 
 - 键值对个数最多为2^32-1个，也就是4294967295个。
@@ -102,6 +110,8 @@ hash 是一个键值对集合，是一个 string 类型的 key和 value 的映�
 更直观，相比string更节省空间的维护缓存信息，如用户信息，视频信息等。
 
 ### list
+
+ziplist或linkedlist
 
 list 列表，它是简单的字符串列表，按照插入顺序排序，你可以添加一个元素到列表的头部（左边）或者尾部（右边），它的底层实际上是个链表。
 
@@ -146,6 +156,8 @@ timeline
 
 ### set
 
+intset或hashtable
+
 集合类型也是用来保存多个字符串的元素，但和列表不同的是集合中
 
 1. 不允许有重复的元素
@@ -171,6 +183,8 @@ timeline
 2.点赞，或点踩，收藏等，可以放到set中实现
 
 ### zset
+
+ziplist或skiplist
 
 有序集合和集合有着必然的联系，保留了集合不能有重复成员的特性，区别是，有序集合中的元素是可以排序的，它给每个元素设置一个分数，作为排序的依据。
 
@@ -224,7 +238,7 @@ C语言由于不记录字符串的长度，所以如果要修改字符串，必�
 
 
 
-### linkedlist(双端链表)
+### linkedlist
 
 **定义**
 
@@ -346,7 +360,7 @@ index = hash & dict->ht[x].sizemask;
 
 所以Redis采用渐进式 rehash,这样在进行渐进式rehash期间，字典的删除查找更新等操作可能会在两个哈希表上进行，第一个哈希表没有找到，就会去第二个哈希表上进行查找。但是进行增加操作，一定是在新的哈希表上进行的。
 
-### 跳跃表
+### skiplist
 
 跳跃表（skiplist）是一种有序数据结构，它通过在每个节点中维持多个指向其它节点的指针，从而达到快速访问节点的目的。具有如下性质：
 
@@ -418,7 +432,7 @@ typedef struct zskiplist{
 
 
 
-### 整数集合
+### intset
 
 整数集合（intset）是Redis用于保存整数值的集合抽象数据类型，它可以保存类型为int16_t、int32_t 或者int64_t 的整数值，并且保证集合中不会出现重复元素。
 
@@ -460,7 +474,7 @@ length 属性记录了 contents 数组的大小。
 
 
 
-### 压缩列表
+### ziplist
 
 压缩列表（ziplist）是Redis为了节省内存而开发的，是由一系列特殊编码的连续内存块组成的顺序型数据结构，一个压缩列表可以包含任意多个节点（entry），每个节点可以保存一个字节数组或者一个整数值。
 
@@ -479,30 +493,6 @@ length 属性记录了 contents 数组的大小。
 ③、content：content区域用于保存节点的内容，节点内容类型和长度由encoding决定。
 
 
-
-## 数据类型实现
-
-[Redis详解（五）------ redis的五大数据类型实现原理 - YSOcean - 博客园 (cnblogs.com)](https://www.cnblogs.com/ysocean/p/9102811.html)
-
-**string**
-
-简单动态字符串（SDS）
-
-**hash**
-
-ziplist或hashtable
-
-**list**
-
-ziplist或linkedlist
-
-**set**
-
-intset或hashtable
-
-**zset**
-
-ziplist或skiplist
 
 
 
@@ -692,20 +682,90 @@ Redis的事务之所以如此设计，它为了确保本身的性能，同时不
 
 ## 布隆过滤器
 
+布隆过滤器是一个 bit 向量或者说 bit 数组，长这样：
+
+![img](https://pic3.zhimg.com/80/v2-530c9d4478398718c15632b9aa025c36_720w.jpg)
+
+如果我们要映射一个值到布隆过滤器中，我们需要使用**多个不同的哈希函数**生成**多个哈希值，**并对每个生成的哈希值指向的 bit 位置 1，例如针对值 “baidu” 和三个不同的哈希函数分别生成了哈希值 1、4、7，则上图转变为：
+
+![img](https://pic4.zhimg.com/80/v2-a0ee721daf43f29dd42b7d441b79d227_720w.jpg)
+
+Ok，我们现在再存一个值 “tencent”，如果哈希函数返回 3、4、8 的话，图继续变为：
+
+![img](https://pic3.zhimg.com/80/v2-c0c20d8e06308aae1578c16afdea3b6a_720w.jpg)
+
+值得注意的是，4 这个 bit 位由于两个值的哈希函数都返回了这个 bit 位，因此它被覆盖了。现在我们如果想查询 “dianping” 这个值是否存在，哈希函数返回了 1、5、8三个值，结果我们发现 5 这个 bit 位上的值为 0，**说明没有任何一个值映射到这个 bit 位上**，因此我们可以很确定地说 “dianping” 这个值不存在。而当我们需要查询 “baidu” 这个值是否存在的话，那么哈希函数必然会返回 1、4、7，然后我们检查发现这三个 bit 位上的值均为 1，那么我们可以说 “baidu” **存在了么？答案是不可以，只能是 “baidu” 这个值可能存在。**
+
+这是为什么呢？答案跟简单，因为随着增加的值越来越多，被置为 1 的 bit 位也会越来越多，这样某个值 “taobao” 即使没有被存储过，但是万一哈希函数返回的三个 bit 位都被其他值置位了 1 ，那么程序还是会判断 “taobao” 这个值存在。
+
+### 支持删除么
+
+感谢评论区提醒，传统的布隆过滤器并不支持删除操作。但是名为 Counting Bloom filter 的变种可以用来测试元素计数个数是否绝对小于某个阈值，它支持元素删除。可以参考文章 [Counting Bloom Filter 的原理和实现](https://link.zhihu.com/?target=https%3A//cloud.tencent.com/developer/article/1136056)
+
+### 如何选择哈希函数个数和布隆过滤器长度
+
+很显然，过小的布隆过滤器很快所有的 bit 位均为 1，那么查询任何值都会返回“可能存在”，起不到过滤的目的了。布隆过滤器的长度会直接影响误报率，布隆过滤器越长其误报率越小。
+
+另外，哈希函数的个数也需要权衡，个数越多则布隆过滤器 bit 位置位 1 的速度越快，且布隆过滤器的效率越低；但是如果太少的话，那我们的误报率会变高。
+
+![img](https://pic4.zhimg.com/80/v2-05d4a17ec47911d9ff0e72dc788d5573_720w.jpg)k 为哈希函数个数，m 为布隆过滤器长度，n 为插入的元素个数，p 为误报率
+
+如何选择适合业务的 k 和 m 值呢，这里直接贴一个公式：
+
+![img](https://pic1.zhimg.com/80/v2-1ed5b79aa7ac2e9cd66c83690fdbfcf0_720w.jpg)
+
+如何推导这个公式这里只是提一句，因为对于使用来说并没有太大的意义，你让一个高中生来推会推得很快。k 次哈希函数某一 bit 位未被置为 1 的概率为：
+
+![[公式]](https://www.zhihu.com/equation?tex=%281-%5Cfrac%7B1%7D%7Bm%7D%29%5E%7Bk%7D)
+
+插入n个元素后依旧为 0 的概率和为 1 的概率分别是：
+
+![[公式]](https://www.zhihu.com/equation?tex=%5Cleft%28+1-%5Cfrac%7B1%7D%7Bm%7D+%5Cright%29%5E%7Bnk%7D) ![[公式]](https://www.zhihu.com/equation?tex=1-+%5Cleft%28+1-%5Cfrac%7B1%7D%7Bm%7D+%5Cright%29%5E%7Bnk+%7D)
+
+标明某个元素是否在集合中所需的 k 个位置都按照如上的方法设置为 1，但是该方法可能会使算法错误的认为某一原本不在集合中的元素却被检测为在该集合中（False Positives），该概率由以下公式确定
+
+![[公式]](https://www.zhihu.com/equation?tex=%5Cleft%5B+1-+%5Cleft%28+1-%5Cfrac%7B1%7D%7Bm%7D+%5Cright%29%5E%7Bnk%7D+%5Cright%5D%5E%7Bk%7D%5Capprox%5Cleft%28+1-e%5E%7B-kn%2Fm%7D+%5Cright%29%5E%7Bk%7D)
+
+### 最佳实践
+
+常见的适用常见有，利用布隆过滤器减少磁盘 IO 或者网络请求，因为一旦一个值必定不存在的话，我们可以不用进行后续昂贵的查询请求。
+
+另外，既然你使用布隆过滤器来加速查找和判断是否存在，那么性能很低的哈希函数不是个好选择，推荐 MurmurHash、Fnv 这些。
+
+**大Value拆分**
+
+Redis 因其支持 setbit 和 getbit 操作，且纯内存性能高等特点，因此天然就可以作为布隆过滤器来使用。但是布隆过滤器的不当使用极易产生大 Value，增加 Redis 阻塞风险，因此生成环境中建议对体积庞大的布隆过滤器进行拆分。
+
+拆分的形式方法多种多样，但是本质是不要将 Hash(Key) 之后的请求分散在多个节点的多个小 bitmap 上，而是应该拆分成多个小 bitmap 之后，对一个 Key 的所有哈希函数都落在这一个小 bitmap 上。
 
 
 
+## IO 多路复用
 
-## TODO IO多路复用
+`Redis`基于`Reactor`模式开发了自己的网络事件处理器，称之为**文件事件处理器(`File Event Hanlder`)**。文件事件处理器由`Socket`、`IO`多路复用程序、文件事件分派器(`dispather`)，事件处理器(`handler`)四部分组成。关于`IO`多路复用的相关知识，这方面可以参考我之前的[一篇文章](https://www.cnblogs.com/reecelin/p/13537734.html)，这里就不多解释了。文件事件处理器的模型如下所示：
 
-select，poll，epoll
+![image-20200820212146572](https://gitee.com/workingonescape/typora_images/raw/master/image-20200820212146572.png)
 
-## TODO 内核态和用户态的IO过程
+`IO`多路复用程序会同时监听多个`socket`，当被监听的`socket`准备好执行`accept`、`read`、`write`、`close`等操作时，与这些操作相对应的文件事件就会产生。`IO`多路复用程序会把所有产生事件的`socket`压入一个队列中，然后有序地每次仅一个`socket`的方式传送给文件事件分派器，文件事件分派器接收到`socket`之后会根据`socket`产生的事件类型调用对应的事件处理器进行处理。
 
+文件事件处理器分为几种：
 
+- **连接应答处理器**：用于处理客户端的连接请求；
+- **命令请求处理器**：用于执行客户端传递过来的命令，比如常见的`set`、`lpush`等；
+- **命令回复处理器**：用于返回客户端命令的执行结果，比如`set`、`get`等命令的结果；
 
-## TODO linux IO
+事件种类：
 
+- `AE_READABLE`
 
+  ：与两个事件处理器结合使用。
 
-## TODO netty
+  - 当客户端连接服务器端时，服务器端会将连接应答处理器与`socket`的`AE_READABLE`事件关联起来；
+  - 当客户端向服务端发送命令的时候，服务器端将命令请求处理器与`AE_READABLE`事件关联起来；
+
+- `AE_WRITABLE`：当服务端有数据需要回传给客户端时，服务端将命令回复处理器与`socket`的`AE_WRITABLE`事件关联起来。
+
+`Redis`的客户端与服务端的交互过程如下所示：
+
+![image-20210917160156402](https://gitee.com/workingonescape/typora_images/raw/master/image-20210917160156402.png)
+

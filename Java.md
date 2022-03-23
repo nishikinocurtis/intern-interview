@@ -22,6 +22,12 @@
 
 
 
+**如何理解面向对象**
+
+世间万物皆对象，对象有具体的的实例化，任何方法或者属性都要写在对象(类)里面，就是不断的创建对象使用对象指挥对象做事。
+
+
+
 **继承和多态的区别**
 
 继承是子类获得父类的成员，重写是继承后重新实现父类的方法。重载是在一个类里一系列 参数不同 名字相同 的方法。
@@ -32,13 +38,42 @@
 
 
 
-**如何理解面向对象**
+**类的组成和执行顺序**
 
-世间万物皆对象，对象有具体的的实例化，任何方法或者属性都要写在对象(类)里面，就是不断的创建对象使用对象指挥对象做事。
+- 类的组成：属性 方法 静态块 非静态块。
+- 执行顺序：父类，子类，静态块，静态字段，非静态块，非静态字段，构造器，方法。
 
 
 
-**接口与抽象类的区别**
+**构造方法可否能被重写**
+
+不能被重写，只有继承关系才能重写，构造方法不能被重写，但是能被重载
+
+
+
+**多态的实现方式**
+
+多态必要的条件：继承、父类的引用指向子类的对象。
+
+重写，接口，抽象类
+
+
+
+**final**
+
+final 关键字可以修饰类、方法和属性。
+
+- 当 final 修饰类的时候，这个类不能被继承。final 类中的所有成员方法都会被隐式地指定为 final 方法。
+
+- 当 final 修饰方法的时候，表明这个方法不能被重写。
+
+- 当 final 修饰属性的时候，如果是基本数据类型的变量，其数值在初始化之后便不能更改。如果是引用类型的变量，则在对其初始化之后便不能再让其指向另一个对象。
+
+
+
+
+
+### 接口与抽象类
 
 [Java抽象类与接口的区别 - aspirant - 博客园 (cnblogs.com)](https://www.cnblogs.com/aspirant/p/7079670.html)
 
@@ -71,22 +106,27 @@
 
 
 
-**类的组成和执行顺序**
+### 访问修饰符
 
-- 类的组成：属性 方法 静态块 非静态块。
-- 执行顺序：父类，子类，静态块，静态字段，非静态块，非静态字段，构造器，方法。
+类的访问修饰符有：public、缺省
+
+- public：Java 语言中类的可访问控制符只有一个： public 即公共的。每个 Java 程序的主类都必须是 public 类作为公共工具。
+- 缺省：如果一个类没有访问控制符，说明它具有缺省的访问控制符特性。此时，这个类只能被同一个包中的类访问或引用。
+
+属性和方法的访问修饰符有：public、private、protected、缺省
+
+- public：如果属于一个公共类，则可以被所有其它类所引用。
+- private：只能被该类自身所访问，而不能被任何其它类 ( 包括子类 ) 所引用。
+- protected：可以被三种类所引用：①该类自身；②与它在同一个包中的其它类；③子类。
+- 缺省：若没有声明任何访问修饰符，可被同一包中的其它类访问。
+
+![img](https://iknow-pic.cdn.bcebos.com/cdbf6c81800a19d865fd770a3efa828ba71e46c7?x-bce-process%3Dimage%2Fresize%2Cm_lfit%2Cw_600%2Ch_800%2Climit_1%2Fquality%2Cq_85%2Fformat%2Cf_jpg)
 
 
 
-**构造方法可否能被重写**
-
-不能被重写，只有继承关系才能重写，构造方法不能被重写，但是能被重载
 
 
 
-**多态的实现方式**
-
-重写，接口，抽象类
 
 
 
@@ -191,6 +231,304 @@ java的内部类并不一定要要声明成static。
 - 因为 Set 存储的是不重复的对象，依据 hashCode 和 equals 进行判断，所以 Set 存储的对象必须重写这两个方法；
 - 如果自定义对象做为 Map 的键，那么必须重写 hashCode 和 equals；
 - String 重写了 hashCode 和 equals 方法，所以我们可以非常愉快地使用 String 对象作为 key 来使用；
+
+
+
+## 集合
+
+
+
+### 集合间的继承关系
+
+![img](https://img-blog.csdnimg.cn/20190514164943406.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3dlaXhpbl8zNjM3ODkxNw==,size_16,color_FFFFFF,t_70)
+
+
+
+
+
+### ArrayList
+
+#### 和 Array 区别
+
+1：数组是定长，list是自动增长。
+
+2：数组效率高，list效率低。
+
+总结：数组牺牲功能增加效率，list牺牲效率增加功能。
+
+
+
+基于动态数组。
+
+如果我们要在某一个位置添加或者删除一个元素，剩下的每个元素都要相应地依次复制插入到后面一格。
+
+插入，删除，查找，扩容的复杂度都是 O(n)。
+
+#### 线程不安全
+
+对ArrayList进行添加元素的操作的时候是分两个步骤进行的，即第一步先在object[size]的位置上存放需要添加的元素；第二步将size的值增加1。由于这个过程在多线程的环境下是不能保证具有原子性的，因此ArrayList在多线程的环境下是线程不安全的。
+
+#### 扩容
+
+ArrayList的扩容主要发生在向ArrayList集合中添加元素的时候。由add()方法的分析可知添加前必须确保集合的容量能够放下添加的元素。主要经历了以下几个阶段：
+
+第一，在add()方法中调用ensureCapacityInternal(size + 1)方法来确定集合确保添加元素成功的最小集合容量minCapacity的值。参数为size+1，代表的含义是如果集合添加元素成功后，集合中的实际元素个数。换句话说，集合为了确保添加元素成功，那么集合的最小容量minCapacity应该是size+1。在ensureCapacityInternal方法中，首先判断elementData是否为默认的空数组，如果是，minCapacity为minCapacity与集合默认容量大小中的较大值。
+
+第二，调用ensureExplicitCapacity(minCapacity)方法来确定集合为了确保添加元素成功是否需要对现有的元素数组进行扩容。首先将结构性修改计数器加一；然后判断minCapacity与当前元素数组的长度的大小，如果minCapacity比当前元素数组的长度的大小大的时候需要扩容，进入第三阶段。
+
+第三，如果需要对现有的元素数组进行扩容，则调用grow(minCapacity)方法，参数minCapacity表示集合为了确保添加元素成功的最小容量。在扩容的时候，首先将原元素数组的长度增大1.5倍（oldCapacity + (oldCapacity >> 1)），然后对扩容后的容量与minCapacity进行比较：① 新容量小于minCapacity，则将新容量设为minCapacity；②新容量大于minCapacity，则指定新容量。最后将旧数组拷贝到扩容后的新数组中。
+
+
+
+#### 优缺点
+
+**优点**
+
+1. ArrayList底层以数组实现，是一种随机访问模式，再加上它实现了RandomAccess接口，因此查找也就是get的时候非常快。
+2. ArrayList在顺序添加一个元素的时候非常方便，只是往数组里面添加了一个元素而已。
+3. 根据下标访问元素，效率高。
+4. 可以自动扩容，默认为每次扩容为原来的1.5倍。
+
+**缺点**
+
+1. 插入和删除元素的效率不高。
+2. 根据元素查找下标需要遍历整个元素数组，效率不高。
+3. 线程不安全。
+
+
+
+### LinkedList
+
+基于双向链表。
+
+
+
+
+
+### HashSet
+
+- 是基于HashMap实现的，默认构造函数是构建一个初始容量为16，负载因子为0.75 的HashMap。封装了一个 HashMap 对象来存储所有的集合元素，所有放入 HashSet 中的集合元素实际上由 HashMap 的 key 来保存，而 HashMap 的 value 则存储了一个 PRESENT，它是一个静态的 Object 对象。
+- 当我们试图把某个类的对象当成 HashMap的 key，或试图将这个类的对象放入 HashSet 中保存时，重写该类的equals(Object obj)方法和 hashCode() 方法很重要，而且这两个方法的返回值必须保持一致：当该类的两个的 hashCode() 返回值相同时，它们通过 equals() 方法比较也应该返回 true。通常来说，所有参与计算 hashCode() 返回值的关键属性，都应该用于作为 equals() 比较的标准。
+- HashSet的其他操作都是基于HashMap的。
+
+
+
+### HashMap
+
+[图解 HashMap 源码——逐行分析源码，面试再也不怕被问HashMap了_every__day的博客-CSDN博客](https://blog.csdn.net/every__day/article/details/114118922)
+
+在JDK1.6，JDK1.7中，HashMap采用位桶+链表实现，即使用链表处理冲突，同一hash值的链表都存储在一个链表里。但是当位于一个桶中的元素较多，即hash值相等的元素较多时，通过key值依次查找的效率较低。
+
+而JDK1.8中，HashMap采用位桶+链表+红黑树实现，当数组长度大于等于64，且链表长度大于8，将链表转换为红黑树，这样大大减少了查找时间。
+
+首先有一个数组，当添加一个元素（key-value）时，就首先计算元素key的hash值，以此确定插入数组中的位置，但是可能存在同一hash值的元素已经被放在数组同一位置了，这时就添加到同一hash值的元素的后面，他们在数组的同一位置，但是形成了链表，同一各链表上的Hash值是相同的，所以说数组存放的是链表。而当链表长度太长时，链表就转换为红黑树，这样大大提高了查找的效率。
+
+
+
+#### hash
+
+```java
+//拿到对象的 hashCode
+h = hashCode();
+//将 hashCode 右移 16 位，让 hashCode 的高位与地位异或，增加低位的随机性。并且混合后的值也变相保持了高位的特征。
+hash = h ^ (h >>> 16);
+//只取前几位的 hash 作为 index
+index = hash & (arrays.length-1);
+```
+
+
+
+**为什么不直接用红黑树**
+
+红黑树平均查找长度是 log(n) ，链表平均查找长度是 n/2 。
+
+当 n<8 时，平均查找长度相近，但是红黑树的插入删除时的旋转开销都较大，节点占用的空间较大。所以选择使用链表。
+
+当 n>8 时，平均查找长度有了较显著的差别，这时转化为树才有了意义。
+
+所以说这种策略也是一种时间和空间上的妥协。
+
+
+
+#### 扩容
+
+即当前元素数量超过数组的长度乘以加载因子（默认0.75）的值的时候，就要自动扩容。
+
+初始化后首次插入数据时，先发生 resize 扩容再插入数据。之后每当插入的数据到达阈值时就会发生 resize ，这时是先插入数据再 resize 。
+
+![img](https://img-blog.csdn.net/20170123110716285)
+
+扩容时，遍历 hashmap 每个 bucket 里的链表，每个链表可能会被拆分成两个链表，不需要移动的元素置入 loHead 为首的链表，需要移动的元素置入 hiHead为首的链表，然后分别分配给老的buket（原索引）和新的buket（原索引+oldCap） 。
+
+
+
+扩容时，如果节点是红黑树节点，就会调用TreeNode的split方法对当前节点作为跟节点的红黑树进行修剪。HashMap 扩容时对红黑树节点的修剪主要分两部分，先分类、再根据元素个数决定是还原成链表还是精简一下元素仍保留红黑树结构。
+
+1.分类
+
+指定位置、指定范围，让指定位置中的元素 `（hash & bit) == 0` 的，放到 lXXX 树中，不相等的放到 hXXX 树中。
+
+2.根据元素个数决定处理情况
+
+符合要求的元素（即 lXXX 树），在元素个数小于等于 6 时还原成链表，最后让哈希表中修剪的痛 tab[index] 指向 lXXX 树；在元素个数大于 6 时，还是用红黑树，只不过是修剪了下枝叶；
+
+不符合要求的元素（即 hXXX 树）也是一样的操作，只不过最后它是放在了修剪范围外 tab[index + bit]。
+
+
+
+**为什么不使用 AVL 树**
+
+AVL 树是平衡树，在查找时效率比红黑树高一点。
+
+红黑树是近似平衡的树，在维护平衡的成本上，要比AVL树要低。
+
+所以红黑树的插入、删除、查找等各种操作的性能都比较稳定。
+
+
+
+#### 线程不安全
+
+[HashMap多线程并发问题分析-正常和异常的rehash1(阿里) - aspirant - 博客园 (cnblogs.com)](https://www.cnblogs.com/aspirant/p/11504389.html)
+
+HashMap 的线程不安全最主要是体现在扩容和插入中，这里又分为 JDK7 和 JDK8 两种情况。
+
+**JDK7**
+
+JDK7 中节点插入采用头插法
+
+- 在扩容中：假设线程1在遍历过程中，拿到了下一次准备遍历的next，这时线程2也在扩容，会修改next对象。当线程1继续执行时，可能会造成两个Entry互相引用，造成**死循环**，并且**丢失元素**。
+- 在插入中：假设两个线程同时拿到链表头，第一个链表插入后，第二个链表的插入就会覆盖第一个链表的操作，造成**元素覆盖**。
+
+**JDK8**
+
+JDK8 中节点插入采用尾插法，避免了链表成环，造成死循环。
+
+- 插入中：会造成**元素覆盖**。
+
+
+
+### HashTable
+
+HashTable 无论 key 还是 value 都不能为 null。
+
+Hashtable是线程安全的，多个线程可以共享一个Hashtable。
+
+实现线程安全的方式是在修改数据时锁住整个Hashtable，效率低。
+
+
+
+### ConcurrentHashMap
+
+[java-并发-ConcurrentHashMap高并发机制-jdk1.8_阿里Darker-CSDN博客](https://blog.csdn.net/jianghuxiaojin/article/details/52006118)
+
+[图解 ConCurrentHashMap ——从源码层面，弄清楚它是怎么控制并发的_every__day的博客-CSDN博客](https://blog.csdn.net/every__day/article/details/114293107)
+
+[ConCurrentHashMap并发环境时，如何计数的？—— sumCount()、fullAddCount()_every__day的博客-CSDN博客_concurrenthashmap计数](https://blog.csdn.net/every__day/article/details/115030000)
+
+ConcurrentHashMap 1.8 采用Node + CAS + Synchronized来保证并发安全进行实现，采用table数组＋链表＋红黑树的存储结构。以table数组元素作为锁，利用CAS+Synchronized来保证并发更新的安全，从而实现了对每个数组元素（Node）进行加锁，进一步减少并发冲突的概率。ConcurrentHashMap可以做到读取数据不加锁，并且其内部的结构可以让其在进行写操作的时候能够将锁的粒度保持地尽量地小，允许多个修改操作并发进行。
+
+<img src="https://img-blog.csdnimg.cn/20200409211332776.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzQzMjUzMTIz,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述"  />
+
+
+
+#### 区别
+
+- key 和 value 均不能为空
+
+
+
+#### 内部类
+
+
+
+**Node**
+
+Node 是最核心的内部类，它包装了 key-value 键值对，所有插入 ConcurrentHashMap 的数据都包装在这里面。
+
+- 这个 Node 内部类与 HashMap 中定义的 Node 类很相似，但是有一些差别，
+- 它对 value 和 next 属性设置了 **volatile** 同步锁 
+- 它不允许调用 setValue 方法直接改变 Node 的 value 域 
+- 它增加了 find 方法辅助 map.get() 方法 
+
+
+
+**TreeNode**
+
+树节点类，另外一个核心的数据结构。当链表长度过长的时候，会转换为 TreeNode。但是与 HashMap 不相同的是，它并不是直接转换为红黑树，而是把这些结点包装成 TreeNode 放在 TreeBin 对象中，由 TreeBin 完成对红黑树的包装。
+
+而且 TreeNode 在 ConcurrentHashMap 集成自 Node 类，而并非 HashMap 中的集成自 LinkedHashMap.Entry<K,V> 类，也就是说 TreeNode 带有 next 指针，这样做的目的是方便基于 TreeBin 的访问。
+
+
+
+**TreeBin**
+
+这个类并不负责包装用户的 key、value 信息，而是包装的很多 TreeNode 节点。它代替了TreeNode 的根节点，也就是说在实际的 ConcurrentHashMap “数组” 中，存放的是 TreeBin 对象，而不是 TreeNode 对象，这是与 HashMap 的区别。另外这个类还带有了读写锁。
+
+这里仅贴出它的构造方法。可以看到在构造 TreeBin 节点时，仅仅指定了它的 hash 值为 TREEBIN 常量，这也就是个标识为。同时也看到我们熟悉的红黑树构造方法。
+
+
+
+**ForwardingNode**
+
+一个用于连接两个 table 的节点类。它包含一个 nextTable 指针，用于指向下一张表。而且这个节点的 key value next 指针全部为 null，它的 hash 值为 -1。这里面定义的 find 的方法是从 nextTable 里进行查询节点，而不是以自身为头节点进行查找
+
+
+
+#### CAS
+
+JDK8中ConcurrentHashMap参考了JDK8 HashMap的实现，采用了数组+链表+红黑树的实现方式来设计，内部大量采用CAS操作。
+
+CAS是compare and swap的缩写，即我们所说的比较交换。cas是一种基于锁的操作，而且是乐观锁。
+
+乐观锁总是假设最好的情况，每次去拿数据的时候都认为别人不会修改，所以不会上锁，但是在更新的时候会判断一下在此期间别人有没有去更新这个数据，可以使用版本号机制和CAS算法实现。乐观锁适用于多读的应用类型，这样可以提高吞吐量。
+
+CAS 操作包含三个操作数 —— 内存位置（V）、预期原值（A）和新值(B)。如果内存地址里面的值和A的值是一样的，那么就将内存里面的值更新成B。CAS是通过自旋来获取数据的，若果在第一轮循环中，a线程获取地址里面的值被b线程修改了，那么a线程需要自旋，到下次循环才有可能机会执行。
+
+
+
+#### 计数
+
+对于 ConcurrentHashMap 来说，这个 table 里到底装了多少东西其实是个不确定的数量，因为不可能在调用 size() 方法的时候像 GC 的 “stop the world” 一样让其他线程都停下来让你去统计，因此只能说这个数量是个估计值。对于这个估计值，ConcurrentHashMap 也是大费周章才计算出来的。
+
+计数的方法有 size 和 mappingSize，而这两个方法都是调用 sumCount 方法。
+
+- size 返回 int，是将 long 强转为 int
+- mappingSize 返回 long，可计数的范围更大
+
+sumCount 统计 baseCount 和各个 CounterCell 的和。
+
+```java
+final long sumCount() {                      
+    CounterCell[] as = counterCells;         
+    CounterCell a;                           
+    long sum = baseCount;                    
+    if (as != null) {                        
+        for (int i = 0; i < as.length; ++i) {
+            if ((a = as[i]) != null)         
+                sum += a.value;              
+        }                                    
+    }                                        
+    return sum;                              
+}                                            
+```
+
+
+
+计数时，要么修改了 `baseCount`，要么 修改了 `CounterCell` 对象中 `value` 的值。
+
+在 put 和 remove 中，都调用了 addCount 这个方法。这个的一个重要功能就是计数。
+
+#### 总结
+
+- 无竞争条件下，执行 put() 方法时，操作 baseCount 实现计数
+- 首次竞争条件下，执行 put() 方法，会初始化 CounterCell ，并实现计数
+- CounterCell 一旦初始化，计数就优先使用 CounterCell
+- 每个线程，要么修改 CounterCell、要么修改 baseCount，实现计数
+- CounterCell 在竞争特别严重时，会扩容。（扩容上限与 CPU 核数有关，不会一直扩容）
+
+
+
+
 
 
 
@@ -553,6 +891,103 @@ volatile 只能保证一个线程从堆中获取数据时获取的是当前所�
 
 
 
+## 死锁
+
+死锁是指两个或两个以上的线程在执行过程中，因争夺资源而造成的一种互相等待的现象，若无外力作用，它们都将无法推进下去。
+
+例如，某计算机系统中只有一台打印机和一台输入 设备，进程P1正占用输入设备，同时又提出使用打印机的请求，但此时打印机正被进程P2 所占用，而P2在未释放打印机之前，又提出请求使用正被P1占用着的输入设备。这样两个进程相互无休止地等待下去，均无法继续执行，此时两个进程陷入死锁状态。
+
+
+
+### 如何避免死锁
+
+- 加锁顺序（线程按照一定的顺序加锁）
+  - 当多个线程需要相同的一些锁，但是按照不同的顺序加锁，死锁就很容易发生。如果能确保所有的线程都是按照相同的顺序获得锁，那么死锁就不会发生。
+  - 避免嵌套锁：这是死锁最常见的原因，如果您已经持有一个资源，请避免锁定另一个资源。
+- 加锁时限（线程尝试获取锁的时候加上一定的时限，超过时限则放弃对该锁的请求，并释放自己占有的锁）
+  - 避免无限期等待：在尝试获取锁的时候加一个超时时间，这也就意味着在尝试获取锁的过程中若超过了这个时限该线程则放弃对该锁请求。
+- 死锁检测
+  - 死锁检测是一个更好的死锁预防机制，它主要是针对那些不可能实现按序加锁并且锁超时也不可行的场景。
+  - 一个可行的做法是释放所有锁，回退，并且等待一段随机的时间后重试。这个和简单的加锁超时类似，不一样的是只有死锁已经发生了才回退，而不会是因为加锁的请求超时了。虽然有回退和等待，但是如果有大量的线程竞争同一批锁，它们还是会重复地死锁（*原因同超时类似，不能从根本上减轻竞争*）。
+  - 一个更好的方案是给这些线程设置优先级，让一个（或几个）线程回退，剩下的线程就像没发生死锁一样继续保持着它们需要的锁。如果赋予这些线程的优先级是固定不变的，同一批线程总是会拥有更高的优先级。为避免这个问题，可以在死锁发生的时候设置随机的优先级。
+
+
+
+**只锁需要的部分**
+
+只获对需要的资源加锁，如果我们只需要对象的一个字段，那么我们应该只锁定那个特定的字段而不是完整的对象。
+
+**避免无限期等待**
+
+如果两个线程使用 thread join 无限期互相等待也会造成死锁，我们可以设定等待的最大时间来避免这种情况。
+
+
+
+### 死锁案例
+
+```java
+public class DeadLock {
+    public static String obj1 = "obj1";
+    public static String obj2 = "obj2";
+
+    public static void main(String[] args) {
+        Thread a = new Thread(new Lock1());
+        Thread b = new Thread(new Lock2());
+        a.start();
+        b.start();
+    }
+}
+
+class Lock1 implements Runnable {
+    @Override
+    public void run() {
+        try {
+            System.out.println("Lock1 running");
+            while (true) {
+                synchronized (DeadLock.obj1) {
+                    System.out.println("Lock1 lock obj1");
+                    //获取obj1后先等一会儿，让Lock2有足够的时间锁住obj2
+                    Thread.sleep(3000);
+                    synchronized (DeadLock.obj2) {
+                        System.out.println("Lock1 lock obj2");
+                    }
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+}
+
+class Lock2 implements Runnable {
+    @Override
+    public void run() {
+        try {
+            System.out.println("Lock2 running");
+            while (true) {
+                synchronized (DeadLock.obj2) {
+                    System.out.println("Lock2 lock obj2");
+                    Thread.sleep(3000);
+                    synchronized (DeadLock.obj1) {
+                        System.out.println("Lock2 lock obj1");
+                    }
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+}
+```
+
+
+
+
+
+
+
+
+
 ## JVM
 
 [jvm内存模型-和内存分配以及jdk、jre、jvm是什么关系(阿里，美团，京东) - aspirant - 博客园 (cnblogs.com)](https://www.cnblogs.com/aspirant/p/6841955.html)
@@ -722,13 +1157,23 @@ JVM执行引擎实例则对应了属于用户运行程序的线程它是线程�
 
 ## 内存区域
 
-<img src="../img/Xnip2019-04-07_20-05-33.jpg" alt="Xnip2019-04-07_20-05-33" style="zoom: 50%;" />
+
 
 
 
 <img src="https://pics7.baidu.com/feed/9345d688d43f87949c14c60c544b59fd1ad53a86.png?token=cbd79daaae963950c1c907c532aa1d09" alt="img"  />
 
 
+
+
+
+| 数据区     |                                                              |
+| ---------- | ------------------------------------------------------------ |
+| Java 堆    | 存放对象实例                                                 |
+| 方法区     | 类信息、常量、静态变量、即时编译后的代码                     |
+| 本地方法栈 | 为虚拟机使用到的Native方法服务                               |
+| 程序计数器 | 可以看作是当前线程执行的字节码的行号指令器，为了线程正确切换而服务 |
+| 虚拟机栈   | 局部变量表、操作数栈、动态链接、方法出口                     |
 
 
 
@@ -741,14 +1186,6 @@ JVM执行引擎实例则对应了属于用户运行程序的线程它是线程�
   - 堆
 
 
-
-| 数据区     |                                                              |
-| ---------- | ------------------------------------------------------------ |
-| Java 堆    | 存放对象实例                                                 |
-| 方法区     | 类信息、常量、静态变量、即时编译后的代码                     |
-| 本地方法栈 | 为虚拟机使用到的Native方法服务                               |
-| 程序计数器 | 可以看作是当前线程执行的字节码的行号指令器，为了线程正确切换而服务 |
-| 虚拟机栈   | 局部变量表、操作数栈、动态链接、方法出口                     |
 
 
 
@@ -823,6 +1260,18 @@ Java虚拟机的多线程是通过线程轮流切换并分配处理器执行时�
 - 静态变量
 - 即时编译后的代码
 - 等…...
+
+
+
+### OOM
+
+java.lang.OutOfMemoryError: Java heap space ------>java堆内存溢出，此种情况最常见，一般由于内存泄露或者堆的大小设置不当引起。对于内存泄露，需要通过内存监控软件查找程序中的泄露代码，而堆大小可以通过虚拟机参数-Xms,-Xmx等修改。
+
+java.lang.OutOfMemoryError: PermGen space ------>java永久代溢出，即方法区溢出了，一般出现于大量Class或者jsp页面，或者采用cglib等反射机制的情况，因为上述情况会产生大量的Class信息存储于方法区。此种情况可以通过更改方法区的大小来解决，使用类似-XX:PermSize=64m -XX:MaxPermSize=256m的形式修改。另外，过多的常量尤其是字符串也会导致方法区溢出。
+
+java.lang.StackOverflowError ------> 不会抛OOM error，但也是比较常见的Java内存溢出。JAVA虚拟机栈溢出，一般是由于程序中存在死循环或者深度递归调用造成的，栈大小设置太小也会出现此种溢出。可以通过虚拟机参数-Xss来设置栈的大小。
+
+
 
 
 
@@ -1153,380 +1602,6 @@ TLAB本质上还是在 Java 堆中的，所以在 TLAB 区域的对象，也可�
 使用了 TLAB 之后，JVM 会针对每个线程在堆内存中预留一个内存区域，在预留这个操作发生的时候，需要进行加锁或者采用 CAS 等操作进行保护，避免多个线程预留同一个区域。
 
 一旦确定了某个区域分配给某个线程，之后该线程需要分配内存的时候，会优先在这片区域申请。只是在“分配”这个动作上是线程独占的，至于在读取、垃圾回收等动作上都是线程共享的，因此在分配的时候不用进行加锁等操作，从而既保护了线程安全又提升了分配速度。
-
-
-
-## 死锁
-
-死锁是指两个或两个以上的线程在执行过程中，因争夺资源而造成的一种互相等待的现象，若无外力作用，它们都将无法推进下去。
-
-例如，某计算机系统中只有一台打印机和一台输入 设备，进程P1正占用输入设备，同时又提出使用打印机的请求，但此时打印机正被进程P2 所占用，而P2在未释放打印机之前，又提出请求使用正被P1占用着的输入设备。这样两个进程相互无休止地等待下去，均无法继续执行，此时两个进程陷入死锁状态。
-
-
-
-### 如何避免死锁
-
-- 加锁顺序（线程按照一定的顺序加锁）
-  - 当多个线程需要相同的一些锁，但是按照不同的顺序加锁，死锁就很容易发生。如果能确保所有的线程都是按照相同的顺序获得锁，那么死锁就不会发生。
-  - 避免嵌套锁：这是死锁最常见的原因，如果您已经持有一个资源，请避免锁定另一个资源。
-- 加锁时限（线程尝试获取锁的时候加上一定的时限，超过时限则放弃对该锁的请求，并释放自己占有的锁）
-  - 避免无限期等待：在尝试获取锁的时候加一个超时时间，这也就意味着在尝试获取锁的过程中若超过了这个时限该线程则放弃对该锁请求。
-- 死锁检测
-  - 死锁检测是一个更好的死锁预防机制，它主要是针对那些不可能实现按序加锁并且锁超时也不可行的场景。
-  - 一个可行的做法是释放所有锁，回退，并且等待一段随机的时间后重试。这个和简单的加锁超时类似，不一样的是只有死锁已经发生了才回退，而不会是因为加锁的请求超时了。虽然有回退和等待，但是如果有大量的线程竞争同一批锁，它们还是会重复地死锁（*原因同超时类似，不能从根本上减轻竞争*）。
-  - 一个更好的方案是给这些线程设置优先级，让一个（或几个）线程回退，剩下的线程就像没发生死锁一样继续保持着它们需要的锁。如果赋予这些线程的优先级是固定不变的，同一批线程总是会拥有更高的优先级。为避免这个问题，可以在死锁发生的时候设置随机的优先级。
-
-
-
-**只锁需要的部分**
-
-只获对需要的资源加锁，如果我们只需要对象的一个字段，那么我们应该只锁定那个特定的字段而不是完整的对象。
-
-**避免无限期等待**
-
-如果两个线程使用 thread join 无限期互相等待也会造成死锁，我们可以设定等待的最大时间来避免这种情况。
-
-
-
-### 死锁案例
-
-```java
-public class DeadLock {
-    public static String obj1 = "obj1";
-    public static String obj2 = "obj2";
-
-    public static void main(String[] args) {
-        Thread a = new Thread(new Lock1());
-        Thread b = new Thread(new Lock2());
-        a.start();
-        b.start();
-    }
-}
-
-class Lock1 implements Runnable {
-    @Override
-    public void run() {
-        try {
-            System.out.println("Lock1 running");
-            while (true) {
-                synchronized (DeadLock.obj1) {
-                    System.out.println("Lock1 lock obj1");
-                    //获取obj1后先等一会儿，让Lock2有足够的时间锁住obj2
-                    Thread.sleep(3000);
-                    synchronized (DeadLock.obj2) {
-                        System.out.println("Lock1 lock obj2");
-                    }
-                }
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
-}
-
-class Lock2 implements Runnable {
-    @Override
-    public void run() {
-        try {
-            System.out.println("Lock2 running");
-            while (true) {
-                synchronized (DeadLock.obj2) {
-                    System.out.println("Lock2 lock obj2");
-                    Thread.sleep(3000);
-                    synchronized (DeadLock.obj1) {
-                        System.out.println("Lock2 lock obj1");
-                    }
-                }
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
-}
-```
-
-
-
-## 集合
-
-
-
-### 集合间的继承关系
-
-![img](https://img-blog.csdnimg.cn/20190514164943406.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3dlaXhpbl8zNjM3ODkxNw==,size_16,color_FFFFFF,t_70)
-
-
-
-
-
-### ArrayList
-
-#### 和 Array 区别
-
-1：数组是定长，list是自动增长。
-
-2：数组效率高，list效率低。
-
-总结：数组牺牲功能增加效率，list牺牲效率增加功能。
-
-
-
-基于动态数组。
-
-如果我们要在某一个位置添加或者删除一个元素，剩下的每个元素都要相应地依次复制插入到后面一格。
-
-插入，删除，查找，扩容的复杂度都是 O(n)。
-
-#### 线程不安全
-
-对ArrayList进行添加元素的操作的时候是分两个步骤进行的，即第一步先在object[size]的位置上存放需要添加的元素；第二步将size的值增加1。由于这个过程在多线程的环境下是不能保证具有原子性的，因此ArrayList在多线程的环境下是线程不安全的。
-
-#### 扩容
-
-ArrayList的扩容主要发生在向ArrayList集合中添加元素的时候。由add()方法的分析可知添加前必须确保集合的容量能够放下添加的元素。主要经历了以下几个阶段：
-
-第一，在add()方法中调用ensureCapacityInternal(size + 1)方法来确定集合确保添加元素成功的最小集合容量minCapacity的值。参数为size+1，代表的含义是如果集合添加元素成功后，集合中的实际元素个数。换句话说，集合为了确保添加元素成功，那么集合的最小容量minCapacity应该是size+1。在ensureCapacityInternal方法中，首先判断elementData是否为默认的空数组，如果是，minCapacity为minCapacity与集合默认容量大小中的较大值。
-
-第二，调用ensureExplicitCapacity(minCapacity)方法来确定集合为了确保添加元素成功是否需要对现有的元素数组进行扩容。首先将结构性修改计数器加一；然后判断minCapacity与当前元素数组的长度的大小，如果minCapacity比当前元素数组的长度的大小大的时候需要扩容，进入第三阶段。
-
-第三，如果需要对现有的元素数组进行扩容，则调用grow(minCapacity)方法，参数minCapacity表示集合为了确保添加元素成功的最小容量。在扩容的时候，首先将原元素数组的长度增大1.5倍（oldCapacity + (oldCapacity >> 1)），然后对扩容后的容量与minCapacity进行比较：① 新容量小于minCapacity，则将新容量设为minCapacity；②新容量大于minCapacity，则指定新容量。最后将旧数组拷贝到扩容后的新数组中。
-
-
-
-#### 优缺点
-
-**优点**
-
-1. ArrayList底层以数组实现，是一种随机访问模式，再加上它实现了RandomAccess接口，因此查找也就是get的时候非常快。
-2. ArrayList在顺序添加一个元素的时候非常方便，只是往数组里面添加了一个元素而已。
-3. 根据下标访问元素，效率高。
-4. 可以自动扩容，默认为每次扩容为原来的1.5倍。
-
-**缺点**
-
-1. 插入和删除元素的效率不高。
-2. 根据元素查找下标需要遍历整个元素数组，效率不高。
-3. 线程不安全。
-
-
-
-### LinkedList
-
-基于双向链表。
-
-
-
-
-
-### HashSet
-
-- 是基于HashMap实现的，默认构造函数是构建一个初始容量为16，负载因子为0.75 的HashMap。封装了一个 HashMap 对象来存储所有的集合元素，所有放入 HashSet 中的集合元素实际上由 HashMap 的 key 来保存，而 HashMap 的 value 则存储了一个 PRESENT，它是一个静态的 Object 对象。
-- 当我们试图把某个类的对象当成 HashMap的 key，或试图将这个类的对象放入 HashSet 中保存时，重写该类的equals(Object obj)方法和 hashCode() 方法很重要，而且这两个方法的返回值必须保持一致：当该类的两个的 hashCode() 返回值相同时，它们通过 equals() 方法比较也应该返回 true。通常来说，所有参与计算 hashCode() 返回值的关键属性，都应该用于作为 equals() 比较的标准。
-- HashSet的其他操作都是基于HashMap的。
-
-
-
-### HashMap
-
-[图解 HashMap 源码——逐行分析源码，面试再也不怕被问HashMap了_every__day的博客-CSDN博客](https://blog.csdn.net/every__day/article/details/114118922)
-
-在JDK1.6，JDK1.7中，HashMap采用位桶+链表实现，即使用链表处理冲突，同一hash值的链表都存储在一个链表里。但是当位于一个桶中的元素较多，即hash值相等的元素较多时，通过key值依次查找的效率较低。
-
-而JDK1.8中，HashMap采用位桶+链表+红黑树实现，当数组长度大于等于64，且链表长度大于8，将链表转换为红黑树，这样大大减少了查找时间。
-
-首先有一个数组，当添加一个元素（key-value）时，就首先计算元素key的hash值，以此确定插入数组中的位置，但是可能存在同一hash值的元素已经被放在数组同一位置了，这时就添加到同一hash值的元素的后面，他们在数组的同一位置，但是形成了链表，同一各链表上的Hash值是相同的，所以说数组存放的是链表。而当链表长度太长时，链表就转换为红黑树，这样大大提高了查找的效率。
-
-
-
-**为什么不直接用红黑树**
-
-红黑树平均查找长度是 log(n) ，链表平均查找长度是 n/2 。
-
-当 n<8 时，平均查找长度相近，但是红黑树的插入删除时的旋转开销都较大，节点占用的空间较大。所以选择使用链表。
-
-当 n>8 时，平均查找长度有了较显著的差别，这时转化为树才有了意义。
-
-所以说这种策略也是一种时间和空间上的妥协。
-
-
-
-#### 扩容
-
-即当前元素数量超过数组的长度乘以加载因子（默认0.75）的值的时候，就要自动扩容。
-
-初始化后首次插入数据时，先发生 resize 扩容再插入数据。之后每当插入的数据到达阈值时就会发生 resize ，这时是先插入数据再 resize 。
-
-![img](https://img-blog.csdn.net/20170123110716285)
-
-扩容时，遍历 hashmap 每个 bucket 里的链表，每个链表可能会被拆分成两个链表，不需要移动的元素置入 loHead 为首的链表，需要移动的元素置入 hiHead为首的链表，然后分别分配给老的buket（原索引）和新的buket（原索引+oldCap） 。
-
-
-
-扩容时，如果节点是红黑树节点，就会调用TreeNode的split方法对当前节点作为跟节点的红黑树进行修剪。HashMap 扩容时对红黑树节点的修剪主要分两部分，先分类、再根据元素个数决定是还原成链表还是精简一下元素仍保留红黑树结构。
-
-1.分类
-
-指定位置、指定范围，让指定位置中的元素 `（hash & bit) == 0` 的，放到 lXXX 树中，不相等的放到 hXXX 树中。
-
-2.根据元素个数决定处理情况
-
-符合要求的元素（即 lXXX 树），在元素个数小于等于 6 时还原成链表，最后让哈希表中修剪的痛 tab[index] 指向 lXXX 树；在元素个数大于 6 时，还是用红黑树，只不过是修剪了下枝叶；
-
-不符合要求的元素（即 hXXX 树）也是一样的操作，只不过最后它是放在了修剪范围外 tab[index + bit]。
-
-
-
-**为什么不使用 AVL 树**
-
-AVL 树是平衡树，在查找时效率比红黑树高一点。
-
-红黑树是近似平衡的树，在维护平衡的成本上，要比AVL树要低。
-
-所以红黑树的插入、删除、查找等各种操作的性能都比较稳定。
-
-
-
-#### 线程不安全
-
-[HashMap多线程并发问题分析-正常和异常的rehash1(阿里) - aspirant - 博客园 (cnblogs.com)](https://www.cnblogs.com/aspirant/p/11504389.html)
-
-HashMap 的线程不安全最主要是体现在扩容和插入中，这里又分为 JDK7 和 JDK8 两种情况。
-
-**JDK7**
-
-JDK7 中节点插入采用头插法
-
-- 在扩容中：假设线程1在遍历过程中，拿到了下一次准备遍历的next，这时线程2也在扩容，会修改next对象。当线程1继续执行时，可能会造成两个Entry互相引用，造成**死循环**，并且**丢失元素**。
-- 在插入中：假设两个线程同时拿到链表头，第一个链表插入后，第二个链表的插入就会覆盖第一个链表的操作，造成**元素覆盖**。
-
-**JDK8**
-
-JDK8 中节点插入采用尾插法，避免了链表成环，造成死循环。
-
-- 插入中：会造成**元素覆盖**。
-
-
-
-### HashTable
-
-HashTable 无论 key 还是 value 都不能为 null。
-
-Hashtable是线程安全的，多个线程可以共享一个Hashtable。
-
-实现线程安全的方式是在修改数据时锁住整个Hashtable，效率低。
-
-
-
-### ConcurrentHashMap
-
-[java-并发-ConcurrentHashMap高并发机制-jdk1.8_阿里Darker-CSDN博客](https://blog.csdn.net/jianghuxiaojin/article/details/52006118)
-
-[图解 ConCurrentHashMap ——从源码层面，弄清楚它是怎么控制并发的_every__day的博客-CSDN博客](https://blog.csdn.net/every__day/article/details/114293107)
-
-[ConCurrentHashMap并发环境时，如何计数的？—— sumCount()、fullAddCount()_every__day的博客-CSDN博客_concurrenthashmap计数](https://blog.csdn.net/every__day/article/details/115030000)
-
-ConcurrentHashMap 1.8 采用Node + CAS + Synchronized来保证并发安全进行实现，采用table数组＋链表＋红黑树的存储结构。以table数组元素作为锁，利用CAS+Synchronized来保证并发更新的安全，从而实现了对每个数组元素（Node）进行加锁，进一步减少并发冲突的概率。ConcurrentHashMap可以做到读取数据不加锁，并且其内部的结构可以让其在进行写操作的时候能够将锁的粒度保持地尽量地小，允许多个修改操作并发进行。
-
-<img src="https://img-blog.csdnimg.cn/20200409211332776.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzQzMjUzMTIz,size_16,color_FFFFFF,t_70" alt="在这里插入图片描述"  />
-
-
-
-#### 区别
-
-- key 和 value 均不能为空
-
-
-
-#### 内部类
-
-
-
-**Node**
-
-Node 是最核心的内部类，它包装了 key-value 键值对，所有插入 ConcurrentHashMap 的数据都包装在这里面。
-
-- 这个 Node 内部类与 HashMap 中定义的 Node 类很相似，但是有一些差别，
--   它对 value 和 next 属性设置了 **volatile** 同步锁 
--   它不允许调用 setValue 方法直接改变 Node 的 value 域 
--   它增加了 find 方法辅助 map.get() 方法 
-
-
-
-**TreeNode**
-
-树节点类，另外一个核心的数据结构。当链表长度过长的时候，会转换为 TreeNode。但是与 HashMap 不相同的是，它并不是直接转换为红黑树，而是把这些结点包装成 TreeNode 放在 TreeBin 对象中，由 TreeBin 完成对红黑树的包装。
-
-而且 TreeNode 在 ConcurrentHashMap 集成自 Node 类，而并非 HashMap 中的集成自 LinkedHashMap.Entry<K,V> 类，也就是说 TreeNode 带有 next 指针，这样做的目的是方便基于 TreeBin 的访问。
-
-
-
-**TreeBin**
-
-这个类并不负责包装用户的 key、value 信息，而是包装的很多 TreeNode 节点。它代替了TreeNode 的根节点，也就是说在实际的 ConcurrentHashMap “数组” 中，存放的是 TreeBin 对象，而不是 TreeNode 对象，这是与 HashMap 的区别。另外这个类还带有了读写锁。
-
-这里仅贴出它的构造方法。可以看到在构造 TreeBin 节点时，仅仅指定了它的 hash 值为 TREEBIN 常量，这也就是个标识为。同时也看到我们熟悉的红黑树构造方法。
-
-
-
-**ForwardingNode**
-
-一个用于连接两个 table 的节点类。它包含一个 nextTable 指针，用于指向下一张表。而且这个节点的 key value next 指针全部为 null，它的 hash 值为 -1。这里面定义的 find 的方法是从 nextTable 里进行查询节点，而不是以自身为头节点进行查找
-
-
-
-#### CAS
-
-JDK8中ConcurrentHashMap参考了JDK8 HashMap的实现，采用了数组+链表+红黑树的实现方式来设计，内部大量采用CAS操作。
-
-CAS是compare and swap的缩写，即我们所说的比较交换。cas是一种基于锁的操作，而且是乐观锁。
-
-乐观锁总是假设最好的情况，每次去拿数据的时候都认为别人不会修改，所以不会上锁，但是在更新的时候会判断一下在此期间别人有没有去更新这个数据，可以使用版本号机制和CAS算法实现。乐观锁适用于多读的应用类型，这样可以提高吞吐量。
-
-CAS 操作包含三个操作数 —— 内存位置（V）、预期原值（A）和新值(B)。如果内存地址里面的值和A的值是一样的，那么就将内存里面的值更新成B。CAS是通过自旋来获取数据的，若果在第一轮循环中，a线程获取地址里面的值被b线程修改了，那么a线程需要自旋，到下次循环才有可能机会执行。
-
-
-
-#### 计数
-
-对于 ConcurrentHashMap 来说，这个 table 里到底装了多少东西其实是个不确定的数量，因为不可能在调用 size() 方法的时候像 GC 的 “stop the world” 一样让其他线程都停下来让你去统计，因此只能说这个数量是个估计值。对于这个估计值，ConcurrentHashMap 也是大费周章才计算出来的。
-
-计数的方法有 size 和 mappingSize，而这两个方法都是调用 sumCount 方法。
-
-- size 返回 int，是将 long 强转为 int
-- mappingSize 返回 long，可计数的范围更大
-
-sumCount 统计 baseCount 和各个 CounterCell 的和。
-
-```java
-final long sumCount() {                      
-    CounterCell[] as = counterCells;         
-    CounterCell a;                           
-    long sum = baseCount;                    
-    if (as != null) {                        
-        for (int i = 0; i < as.length; ++i) {
-            if ((a = as[i]) != null)         
-                sum += a.value;              
-        }                                    
-    }                                        
-    return sum;                              
-}                                            
-```
-
-
-
-计数时，要么修改了 `baseCount`，要么 修改了 `CounterCell` 对象中 `value` 的值。
-
-在 put 和 remove 中，都调用了 addCount 这个方法。这个的一个重要功能就是计数。
-
-#### 总结
-
-- 无竞争条件下，执行 put() 方法时，操作 baseCount 实现计数
-- 首次竞争条件下，执行 put() 方法，会初始化 CounterCell ，并实现计数
-- CounterCell 一旦初始化，计数就优先使用 CounterCell
-- 每个线程，要么修改 CounterCell、要么修改 baseCount，实现计数
-- CounterCell 在竞争特别严重时，会扩容。（扩容上限与 CPU 核数有关，不会一直扩容）
-
-
 
 
 

@@ -1431,6 +1431,114 @@ public:
 
 
 
+### [剑指 Offer 37. 序列化二叉树](https://leetcode-cn.com/problems/xu-lie-hua-er-cha-shu-lcof/)
+
+
+
+请实现两个函数，分别用来序列化和反序列化二叉树。
+
+你需要设计一个算法来实现二叉树的序列化与反序列化。这里不限定你的序列 / 反序列化算法执行逻辑，你只需要保证一个二叉树可以被序列化为一个字符串并且将这个字符串反序列化为原始的树结构。
+
+提示：输入输出格式与 LeetCode 目前使用的方式一致，详情请参阅 LeetCode 序列化二叉树的格式。你并非必须采取这种方式，你也可以采用其他的方法解决这个问题。
+
+ 
+
+**题解**
+
+BFS层序遍历，使用 stringstream 流恢复树。
+
+层序遍历生成序列，元素之间空格间隔。
+
+恢复时也用层序遍历。
+
+**代码**
+
+```c++
+/**
+ * Definition for a binary tree node.
+ * struct TreeNode {
+ *     int val;
+ *     TreeNode *left;
+ *     TreeNode *right;
+ *     TreeNode(int x) : val(x), left(NULL), right(NULL) {}
+ * };
+ */
+class Codec {
+public:
+
+    // Encodes a tree to a single string.
+    string serialize(TreeNode *root) {
+        if (!root)
+            return "";
+        string ans;
+        queue<TreeNode *> queue;
+        queue.push(root);
+        while (!queue.empty()) {
+            TreeNode *front = queue.front();
+            //空节点，序列化为 #
+            if (!front) {
+                ans += "# ";
+            } else {
+                queue.push(front->left);
+                queue.push(front->right);
+                ans += to_string(front->val) + " ";
+            }
+            queue.pop();
+        }
+        //序列化后的树以空格为间隔，方便使用 stringstream
+        return ans;
+    }
+
+    // Decodes your encoded data to tree.
+    TreeNode *deserialize(string data) {
+        if (data.length() == 0)
+            return NULL;
+        //stringstream 流
+        stringstream stream;
+        string str;
+        //流读入数据
+        stream << data;
+        //流读出数据
+        stream >> str;
+        //stoi 将 string 转为 int
+        TreeNode *root = new TreeNode(stoi(str));
+        queue<TreeNode *> queue;
+        queue.push(root);
+        while (!queue.empty()) {
+            TreeNode *front = queue.front();
+            stream >> str;
+            if (str != "#") {
+                front->left = new TreeNode(stoi(str));
+                queue.push(front->left);
+            }
+            stream >> str;
+            if (str != "#") {
+                front->right = new TreeNode(stoi(str));
+                queue.push(front->right);
+            }
+            queue.pop();
+        }
+        return root;
+    }
+};
+
+// Your Codec object will be instantiated and called as such:
+// Codec codec;
+// codec.deserialize(codec.serialize(root));
+```
+
+
+
+### [剑指 Offer 38. 字符串的排列](https://leetcode-cn.com/problems/zi-fu-chuan-de-pai-lie-lcof/)
+
+
+
+[面试算法题-02 - Allen Ji's blog](https://blog.allenji.cn/p/9230/)
+
+
+
+
+
 ## 位运算
 
 ### [剑指 Offer 15. 二进制中1的个数](https://leetcode-cn.com/problems/er-jin-zhi-zhong-1de-ge-shu-lcof/)
@@ -1746,6 +1854,126 @@ public:
 
 
 
+### [剑指 Offer 59 - I. 滑动窗口的最大值](https://leetcode-cn.com/problems/hua-dong-chuang-kou-de-zui-da-zhi-lcof/)
+
+
+
+给定一个数组 nums 和滑动窗口的大小 k，请找出所有滑动窗口里的最大值。
+
+
+
+**题解**
+
+本体使用类似单调栈的思路，维护一个单调结构。
+
+因为我们需要所有滑动窗口里最大的值，所以维护一个单调递减的队列，这样可以让队首的元素永远是最大的。
+
+当队首元素出滑动窗口时，注意让其出队。
+
+本题里我们保存下标。
+
+**代码**
+
+```c++
+class Solution {
+public:
+    vector<int> maxSlidingWindow(vector<int> &nums, int k) {
+        deque<int> deque;
+        vector<int> ans;
+        if (nums.empty() || k == 0)
+            return ans;
+        //形成初始窗口
+        for (int i = 0; i < k; ++i) {
+            while (!deque.empty() && nums[i] > nums[deque.back()]) {
+                deque.pop_back();
+            }
+            deque.push_back(i);
+        }
+        ans.push_back(nums[deque.front()]);
+        //形成窗口后
+        for (int i = k; i < nums.size(); ++i) {
+            if (deque.front() == i - k) {
+                deque.pop_front();
+            }
+            while (!deque.empty() && nums[i] > nums[deque.back()]) {
+                deque.pop_back();
+            }
+            deque.push_back(i);
+            ans.push_back(nums[deque.front()]);
+        }
+        return ans;
+    }
+};
+```
+
+
+
+### [剑指 Offer 59 - II. 队列的最大值](https://leetcode-cn.com/problems/dui-lie-de-zui-da-zhi-lcof/)
+
+
+
+请定义一个队列并实现函数 max_value 得到队列里的最大值，要求函数max_value、push_back 和 pop_front 的均摊时间复杂度都是O(1)。
+
+若队列为空，pop_front 和 max_value 需要返回 -1
+
+**题解**
+
+参考上题，本题可用单调队列。
+
+额外维护一个递减队列存最大值，当有新的值比队尾大时依次弹出队尾，被它弹出的元素永远比该新值小。
+
+**代码**
+
+```C++
+class MaxQueue {
+    deque<int> deque;
+    queue<int> queue;
+public:
+    MaxQueue() {
+        while (!deque.empty())
+            deque.pop_back();
+        while (!queue.empty())
+            queue.pop();
+    }
+
+    int max_value() {
+        if (queue.empty())
+            return -1;
+        return deque.front();
+    }
+
+    void push_back(int value) {
+        queue.push(value);
+        while (!deque.empty() && value > deque.back()) {
+            deque.pop_back();
+        }
+        deque.push_back(value);
+    }
+
+    int pop_front() {
+        if (queue.empty())
+            return -1;
+        int front = queue.front();
+        if (deque.front() == front)
+            deque.pop_front();
+        queue.pop();
+        return front;
+    }
+};
+
+/**
+ * Your MaxQueue object will be instantiated and called as such:
+ * MaxQueue* obj = new MaxQueue();
+ * int param_1 = obj->max_value();
+ * obj->push_back(value);
+ * int param_3 = obj->pop_front();
+ */
+```
+
+
+
+
+
 ## 字符串
 
 ### [剑指 Offer 05. 替换空格](https://leetcode-cn.com/problems/ti-huan-kong-ge-lcof/)
@@ -1804,6 +2032,294 @@ public:
     }
 };
 ```
+
+
+
+### [剑指 Offer 20. 表示数值的字符串](https://leetcode-cn.com/problems/biao-shi-shu-zhi-de-zi-fu-chuan-lcof/)
+
+
+
+请实现一个函数用来判断字符串是否表示数值（包括整数和小数）。
+
+**数值**（按顺序）可以分成以下几个部分：
+
+1. 若干空格
+2. 一个 小数 或者 整数
+3. （可选）一个 'e' 或 'E' ，后面跟着一个 整数
+4. 若干空格
+
+**小数**（按顺序）可以分成以下几个部分：
+
+1. （可选）一个符号字符（'+' 或 '-'）
+2. 下述格式之一：
+   1. 至少一位数字，后面跟着一个点 '.'
+   2. 至少一位数字，后面跟着一个点 '.' ，后面再跟着至少一位数字
+   3. 一个点 '.' ，后面跟着至少一位数字
+
+**整数**（按顺序）可以分成以下几个部分：
+
+- （可选）一个符号字符（'+' 或 '-'）
+- 至少一位数字
+
+**题解**
+
+确定有限状态自动机。
+
+起初，这个自动机处于「初始状态」。随后，它顺序地读取字符串中的每一个字符，并根据当前状态和读入的字符，按照某个事先约定好的「转移规则」，从当前状态转移到下一个状态；当状态转移完成后，它就读取下一个字符。当字符串全部读取完毕后，如果自动机处于某个「接受状态」，则判定该字符串「被接受」；否则，判定该字符串「被拒绝」。
+
+所有状态：
+
+1. 起始的空格
+2. 符号位
+3. 整数部分
+4. 左侧有整数的小数点
+5. 左侧无整数的小数点（根据前面的第二条额外规则，需要对左侧有无整数的两种小数点做区分）
+6. 小数部分
+7. 字符 e
+8. 指数部分的符号位
+9. 指数部分的整数部分
+10. 末尾的空格
+
+![fig1](https://cdn.jsdelivr.net/gh/TBDGF/TBDGF.github.io@master/img/177f/jianzhi_20_fig1.png)
+
+**代码**
+
+```c++
+class Solution {
+public:
+    enum State {
+        StateInit,
+        StateSign,
+        StateInteger,
+        StatePoint,
+        StatePointWithoutInt,
+        StateFraction,
+        StateExp,
+        StateExpSign,
+        StateExpNumber,
+        StateEnd,
+    };
+
+    enum CharType {
+        CharSpace,
+        CharNumber,
+        CharSign,
+        CharExp,
+        CharPoint,
+        CharIllegal,
+    };
+
+    CharType toCharType(char ch) {
+        if (ch >= '0' && ch <= '9')
+            return CharNumber;
+        else if (ch == ' ')
+            return CharSpace;
+        else if (ch == '-' || ch == '+')
+            return CharSign;
+        else if (ch == 'e' || ch == 'E')
+            return CharExp;
+        else if (ch == '.')
+            return CharPoint;
+        else
+            return CharIllegal;
+    }
+
+    bool isNumber(string s) {
+        //定义状态转移的方式
+        map<State, map<CharType, State>> transfer = {
+                {StateInit,            {
+                                                {CharSpace,  StateInit},
+                                                {CharNumber, StateInteger},
+                                                {CharPoint, StatePointWithoutInt},
+                                                {CharSign, StateSign},
+                                        }
+                },
+                {StateSign,            {
+                                                {CharNumber, StateInteger},
+                                                {CharPoint,  StatePointWithoutInt},
+                                        }
+                },
+                {StateInteger,          {
+                                                {CharNumber, StateInteger},
+                                                {CharSpace,  StateEnd},
+                                                {CharPoint, StatePoint},
+                                                {CharExp,  StateExp},
+                                        }
+                },
+                {StatePoint,            {
+                                                {CharNumber, StateFraction},
+                                                {CharSpace,  StateEnd},
+                                                {CharExp,   StateExp},
+                                        }
+                },
+                {StatePointWithoutInt, {
+                                                {CharNumber, StateFraction},
+                                        }
+                },
+                {StateFraction,         {
+                                                {CharNumber, StateFraction},
+                                                {CharSpace,  StateEnd},
+                                                {CharExp,   StateExp},
+                                        }
+                },
+                {StateExp,              {
+                                                {CharSign,   StateExpSign},
+                                                {CharNumber, StateExpNumber},
+                                        }
+                },
+                {StateExpSign,          {
+                                                {CharNumber, StateExpNumber},
+                                        }
+                },
+                {StateExpNumber,        {
+                                                {CharNumber, StateExpNumber},
+                                                {CharSpace,  StateEnd},
+                                        }
+                },
+                {StateEnd,              {
+                                                {CharSpace,  StateEnd},
+                                        }
+                },
+        };
+
+        State state = StateInit;
+        for (int i = 0; i < s.size(); i++) {
+            //拿到当前遍历到的字符类型
+            CharType charType = toCharType(s[i]);
+            //根据当前类型转移状态
+            if (transfer[state].count(charType) == 0)
+                return false;
+            else
+                state = transfer[state][charType];
+        }
+        return state == StateInteger || state == StatePoint || state == StateFraction ||
+               state == StateExpNumber || state == StateEnd;
+    }
+};
+```
+
+
+
+### [剑指 Offer 67. 把字符串转换成整数](https://leetcode-cn.com/problems/ba-zi-fu-chuan-zhuan-huan-cheng-zheng-shu-lcof/)
+
+写一个函数 StrToInt，实现把字符串转换成整数这个功能。不能使用 atoi 或者其他类似的库函数。
+
+ 
+
+首先，该函数会根据需要丢弃无用的开头空格字符，直到寻找到第一个非空格的字符为止。
+
+当我们寻找到的第一个非空字符为正或者负号时，则将该符号与之后面尽可能多的连续数字组合起来，作为该整数的正负号；假如第一个非空字符是数字，则直接将其与之后连续的数字字符组合起来，形成整数。
+
+该字符串除了有效的整数部分之后也可能会存在多余的字符，这些字符可以被忽略，它们对于函数不应该造成影响。
+
+注意：假如该字符串中的第一个非空格字符不是一个有效整数字符、字符串为空或字符串仅包含空白字符时，则你的函数不需要进行转换。
+
+在任何情况下，若函数不能进行有效的转换时，请返回 0。
+
+**说明**
+
+假设我们的环境只能存储 32 位大小的有符号整数，那么其数值范围为 [−2^31,  2^31 − 1]。如果数值超过这个范围，请返回  INT_MAX (2^31 − 1) 或 INT_MIN (−2^31) 。
+
+**题解**
+
+确定有限状态自动机。
+
+所有的状态：
+
+1. 初始的空格
+2. 符号
+3. 整数
+4. 结束（隐含状态，如果不能满足下面的转移过程，即为结束）
+
+```mermaid
+graph LR
+	Init-->Init
+	Init-->Sign
+	Init-->Integer
+	Sign-->Integer
+	Integer-->Integer
+	
+```
+
+**代码**
+
+```c++
+class Solution {
+public:
+    enum State {
+        StateInit,
+        StateInteger,
+        StateSign,
+    };
+
+    enum CharType {
+        CharSpace,
+        CharNumber,
+        CharSign,
+        CharIllegal,
+    };
+
+    CharType toCharType(char ch) {
+        if (ch >= '0' && ch <= '9')
+            return CharNumber;
+        else if (ch == ' ')
+            return CharSpace;
+        else if (ch == '-' || ch == '+')
+            return CharSign;
+        else
+            return CharIllegal;
+    }
+
+    int strToInt(string str) {
+        map<State, map<CharType, State>> transfer{
+                {StateInit,    {
+                                       {CharSpace,  StateInit},
+                                       {CharSign, StateSign},
+                                       {CharNumber, StateInteger},
+                               }
+                },
+                {StateSign,    {
+                                       {CharNumber, StateInteger},
+                               }
+                },
+                {StateInteger, {
+                                       {CharNumber, StateInteger},
+                               }
+                },
+        };
+        //使用 long long 存放答案，避免越界溢出
+        long long ans = 0;
+        //判断是否为正数
+        bool isPositive = true;
+        State state = StateInit;
+        for (int i = 0; i < str.size(); ++i) {
+            CharType charType = toCharType(str[i]);
+            if (transfer[state].count(charType) == 0) {
+                //状态结束，直接返回
+                return isPositive ? ans : -ans;
+            } else {
+                //状态转移
+                state = transfer[state][charType];
+            }
+            //如果当前在符号位，判断正负
+            if (state == StateSign && str[i] == '-')
+                isPositive = false;
+            //如果在整数位
+            if (state == StateInteger) {
+                ans = ans * 10 + str[i] - '0';
+                //根据正负分别判断是否越界
+                if (isPositive)
+                    ans = ans > INT32_MAX ? INT32_MAX : ans;
+                else
+                    ans = ans > -(long long) INT32_MIN ? -(long long) INT32_MIN : ans;
+            }
+        }
+        return isPositive ? ans : -ans;
+    }
+};
+```
+
+
 
 
 
@@ -1949,6 +2465,119 @@ public:
         while (postorder[p] > postorder[right])
             p++;
         return p == right && recur(postorder, left, m - 1) && recur(postorder, m, right - 1);
+    }
+};
+```
+
+
+
+### [剑指 Offer 17. 打印从1到最大的n位数](https://leetcode-cn.com/problems/da-yin-cong-1dao-zui-da-de-nwei-shu-lcof/)
+
+输入数字 `n`，按顺序打印出从 1 到最大的 n 位十进制数。比如输入 3，则打印出 1、2、3 一直到最大的 3 位数 999。
+
+**题解**
+
+DFS + 回溯。
+
+```c++
+class Solution {
+    vector<string> res;
+    string cur;
+    char NUM[10] = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9'};
+
+public:
+    vector<string> printNumbers(int n) {
+        // 数字长度：1 ~ n
+        for (int i = 1; i <= n; i++)
+            dfs(0, i);
+        return res;
+    }
+
+    // 生成长度为 len 的数字，正在确定第x位（从左往右）
+    void dfs(int depth, int len) {
+        if (depth == len) {
+            res.push_back(cur);
+            return;
+        }
+        // X=0表示左边第一位数字，不能为0
+        int start = depth == 0 ? 1 : 0;
+        for (int i = start; i < 10; i++) {
+            // 确定本位数字
+            cur.push_back(NUM[i]);
+            // 确定下一位数字
+            dfs(depth + 1, len);
+            // 删除本位数字
+            cur.pop_back();
+        }
+    }
+};
+```
+
+
+
+
+
+### [剑指 Offer 51. 数组中的逆序对](https://leetcode-cn.com/problems/shu-zu-zhong-de-ni-xu-dui-lcof/)
+
+在数组中的两个数字，如果前面一个数字大于后面的数字，则这两个数字组成一个逆序对。输入一个数组，求出这个数组中的逆序对的总数。
+
+**题解**
+
+魔改归并，当左边大于右边时统计 cnt。
+
+```c++
+class Solution {
+    int cnt;
+    //辅助数组，用于归并
+    vector<int> temp;
+public:
+    int reversePairs(vector<int> &nums) {
+        temp.resize(nums.size());
+        sort(nums, 0, nums.size() - 1);
+        return cnt;
+    }
+
+    void sort(vector<int> &nums, int left, int right) {
+        int mid = left + ((right - left) >> 1);
+        if (left < right) {
+            sort(nums, left, mid);
+            sort(nums, mid + 1, right);
+            merge(nums, left, mid, right);
+        }
+    }
+
+    void merge(vector<int> &nums, int left, int mid, int right) {
+        //确定左序列和右序列的开始位置，使用 idx 同步修改辅助数组中的值
+        int leftIdx = left, rightIdx = mid + 1, idx = left;
+        //合并
+        while (leftIdx <= mid && rightIdx <= right) {
+            //相较归并排序的改变，相等时不增加 cnt
+            if (nums[leftIdx] <= nums[rightIdx]) {
+                temp[idx] = nums[leftIdx];
+                leftIdx++;
+            } else {
+                //这里增加 cnt
+                cnt += (mid - leftIdx + 1);
+                temp[idx] = nums[rightIdx];
+                rightIdx++;
+            }
+            idx++;
+        }
+        //合并两序列中剩余元素
+        while (leftIdx <= mid) {
+            temp[idx] = nums[leftIdx];
+            idx++;
+            leftIdx++;
+        }
+        while (rightIdx <= right) {
+            temp[idx] = nums[rightIdx];
+            idx++;
+            rightIdx++;
+        }
+        //将辅助数组里的内容保存到主数组中
+        for (int i = left; i <= right; ++i) {
+            nums[i] = temp[i];
+        }
     }
 };
 ```
@@ -2264,6 +2893,133 @@ public:
     }
 };
 ```
+
+
+
+### [剑指 Offer 19. 正则表达式匹配](https://leetcode-cn.com/problems/zheng-ze-biao-da-shi-pi-pei-lcof/)
+
+请实现一个函数用来匹配包含'. '和'*'的正则表达式。模式中的字符'.'表示任意一个字符，而'*'表示它前面的字符可以出现任意次（含0次）。在本题中，匹配是指字符串的所有字符匹配整个模式。例如，字符串"aaa"与模式"a.a"和"ab*ac*a"匹配，但与"aa.a"和"ab*a"均不匹配。
+
+**题解**
+
+**题解**
+
+定义 `dp[i][j]`，从 s 选择前 i 个字符，p 选择 j 个字符，此时选中的字符是否可以匹配。
+
+
+
+```c++
+class Solution {
+public:
+    bool isMatch(string s, string p) {
+        int m = s.size(), n = p.size();
+        vector<vector<int>> dp(s.size() + 1, vector<int>(n + 1, false));
+        dp[0][0] = true;
+        //初始化
+        for (int i = 2; i <= n; i++) {
+            if (p[i - 1] == '*')
+                dp[0][i] = dp[0][i - 2];
+        }
+        for (int i = 1; i <= m; i++) {
+            for (int j = 1; j <= n; j++) {
+                if (p[j - 1] == '*') {
+                    dp[i][j] = dp[i][j - 2] || (dp[i - 1][j] && (s[i - 1] == p[j - 2] || p[j - 2] == '.'));
+                } else {
+                    dp[i][j] = dp[i - 1][j - 1] && (s[i - 1] == p[j - 1] || p[j - 1] == '.');
+                }
+            }
+        }
+        return dp[m][n];
+    }
+};
+```
+
+
+
+### [剑指 Offer 49. 丑数](https://leetcode-cn.com/problems/chou-shu-lcof/)
+
+我们把只包含质因子 2、3 和 5 的数称作丑数（Ugly Number）。求按从小到大的顺序的第 n 个丑数。
+
+**题解**
+
+定义数组 dp，其中 dp[i] 表示第 i 个 丑数，第 n 个丑数即为 dp[n]。
+
+dp[1] = 1。
+
+定义三个指针 p2 p3 p5，表示下一个丑数是当前指针指向的丑数乘以对应的质因数，起初，三个指针的值都是 1。
+
+当 `2 <= i<= n` 时，令 `dp[i] = min(dp[p2] * 2, dp[p3] * 3, dp[p5] * 5)` 然后将对应的指针加 1。
+
+```c++
+class Solution {
+public:
+    int nthUglyNumber(int n) {
+        vector<int> dp(n + 1);
+        dp[1] = 1;
+        int p2 = 1, p3 = 1, p5 = 1;
+        for (int i = 2; i <= n; i++) {
+            int num2 = dp[p2] * 2, num3 = dp[p3] * 3, num5 = dp[p5] * 5;
+            dp[i] = min(min(num2, num3), num5);
+            if (dp[i] == num2) {
+                p2++;
+            }
+            if (dp[i] == num3) {
+                p3++;
+            }
+            if (dp[i] == num5) {
+                p5++;
+            }
+        }
+        return dp[n];
+    }
+};
+```
+
+
+
+### [剑指 Offer 60. n个骰子的点数](https://leetcode-cn.com/problems/nge-tou-zi-de-dian-shu-lcof/)
+
+把n个骰子扔在地上，所有骰子朝上一面的点数之和为s。输入n，打印出s的所有可能的值出现的概率。
+
+你需要用一个浮点数数组返回答案，其中第 i 个元素代表这 n 个骰子所能掷出的点数集合中第 i 小的那个的概率。
+
+**题解**
+
+`dp[i][j]` 表示 i 个骰子，投出 j 的概率。
+
+每一个位置，都有六种情况，可由上一次掷骰的结果算出并分别累加。
+
+```c++
+class Solution {
+public:
+    vector<double> dicesProbability(int n) {
+        vector<double> ans(n * 5 + 1);
+        vector<vector<double>> dp(n + 1, vector<double>(n * 6 + 1));
+        for (int i = 1; i <= 6; i++) {
+            dp[1][i] = 1.0 / 6;
+        }
+        for (int i = 2; i <= n; i++) {
+            for (int j = i; j <= i * 6; j++) {
+
+                //遍历点数 1 到 6
+                for (int k = 1; k <= 6; k++) {
+                    //防止越界
+                    if (j - k > 0)
+                        dp[i][j] += dp[i - 1][j - k] / 6;
+                    else
+                        break;
+                }
+            }
+        }
+        for (int i = 0; i <= 5 * n; ++i) {
+            ans[i] = dp[n][n + i];
+        }
+        return ans;
+    }
+};
+```
+
+
 
 
 
@@ -2620,6 +3376,175 @@ public:
             b[i] *= tmp;
         }
         return b;
+    }
+};
+```
+
+
+
+### [剑指 Offer 57 - II. 和为s的连续正数序列](https://leetcode-cn.com/problems/he-wei-sde-lian-xu-zheng-shu-xu-lie-lcof/)
+
+输入一个正整数 target ，输出所有和为 target 的连续正整数序列（至少含有两个数）。
+
+序列内的数字由小到大排列，不同序列按照首个数字从小到大排列。
+
+**题解**
+
+滑动窗口，当 sum < target 时，sum +=j，j++；当 sum > target 时，sum -=i，i++；否则将 i 到 j 的数字添加到数组中。
+
+```c++
+class Solution {
+public:
+    vector<vector<int>> findContinuousSequence(int target) {
+        vector<vector<int>> ans;
+        vector<int> cur;
+        for (int left = 1, right = 2; left < right;) {
+            int sum = (left + right) * (right - left + 1) / 2;
+            if (sum == target) {
+                cur.clear();
+                for (int i = left; i <= right; ++i) {
+                    cur.emplace_back(i);
+                }
+                ans.emplace_back(cur);
+                left++;
+            } else if (sum < target) {
+                right++;
+            } else {
+                left++;
+            }
+        }
+        return ans;
+    }
+};
+```
+
+
+
+### [剑指 Offer 14- I. 剪绳子](https://leetcode-cn.com/problems/jian-sheng-zi-lcof/)
+
+给你一根长度为 n 的绳子，请把绳子剪成整数长度的 m 段（m、n都是整数，n>1并且m>1），每段绳子的长度记为 k[0],k[1]...k[m-1] 。请问 k[0]*k[1]*...*k[m-1] 可能的最大乘积是多少？例如，当绳子的长度是8时，我们把它剪成长度分别为2、3、3的三段，此时得到的最大乘积是18。
+
+**题解**
+
+数学方法。
+
+① 当所有绳段长度相等时，乘积最大。② 最优的绳段长度为 3 。
+
+```c++
+class Solution {
+public:
+    int cuttingRope(int n) {
+        if (n <= 3)
+            return n - 1;
+        int a = n / 3, b = n % 3;
+        //3 的倍数
+        if (b == 0)
+            return (int) pow(3, a);
+        //模 3 余 1，
+        if (b == 1)
+            return (int) pow(3, a - 1) * 4;
+        return (int) pow(3, a) * 2;
+    }
+};
+```
+
+
+
+### [剑指 Offer 62. 圆圈中最后剩下的数字](https://leetcode-cn.com/problems/yuan-quan-zhong-zui-hou-sheng-xia-de-shu-zi-lcof/)
+
+0,1,···,n-1这n个数字排成一个圆圈，从数字0开始，每次从这个圆圈里删除第m个数字（删除后从下一个数字开始计数）。求出这个圆圈里剩下的最后一个数字。
+
+例如，0、1、2、3、4这5个数字组成一个圆圈，从数字0开始每次删除第3个数字，则删除的前4个数字依次是2、0、4、1，因此最后剩下的数字是3。
+
+**题解**
+
+数学推论。
+
+`dp[i] = (dp[i - 1] +m) % i`
+
+```c++
+class Solution {
+public:
+    int lastRemaining(int n, int m) {
+        int ans = 0;
+        // 最后一轮剩下2个人，所以从2开始反推
+        for (int i = 2; i <= n; i++) {
+            ans = (ans + m) % i;
+        }
+        return ans;
+    }
+};
+```
+
+
+
+## 模拟
+
+### [剑指 Offer 29. 顺时针打印矩阵](https://leetcode-cn.com/problems/shun-shi-zhen-da-yin-ju-zhen-lcof/)
+
+输入一个矩阵，按照从外向里以顺时针的顺序依次打印出每一个数字。
+
+**题解**
+
+模拟。
+
+```c++
+class Solution {
+public:
+    vector<int> spiralOrder(vector<vector<int>> &matrix) {
+        if (matrix.size() == 0)
+            return {};
+        vector<int> ans;
+        int left = 0, right = matrix[0].size() - 1, top = 0, bottom = matrix.size() - 1;
+        while (true) {
+            for (int i = left; i <= right; i++) {
+                ans.push_back(matrix[top][i]);
+            }
+
+            if (top++ >= bottom) break;
+            for (int i = top; i <= bottom; i++) {
+                ans.push_back(matrix[i][right]);
+            }
+
+            if (right-- <= left) break;
+            for (int i = right; i >= left; i--)
+                ans.push_back(matrix[bottom][i]);
+
+            if (bottom-- <= top) break;
+            for (int i = bottom; i >= top; i--)
+                ans.push_back(matrix[i][left]);
+
+            if (left++ >= right) break;
+        }
+        return ans;
+    }
+};
+```
+
+
+
+### [剑指 Offer 31. 栈的压入、弹出序列](https://leetcode-cn.com/problems/zhan-de-ya-ru-dan-chu-xu-lie-lcof/)
+
+输入两个整数序列，第一个序列表示栈的压入顺序，请判断第二个序列是否为该栈的弹出顺序。假设压入栈的所有数字均不相等。例如，序列 {1,2,3,4,5} 是某栈的压栈序列，序列 {4,5,3,2,1} 是该压栈序列对应的一个弹出序列，但 {4,3,5,1,2} 就不可能是该压栈序列的弹出序列。
+
+**题解**
+
+用一个栈去模拟。
+
+```c++
+class Solution {
+public:
+    bool validateStackSequences(vector<int> &pushed, vector<int> &popped) {
+        stack<int> stack;
+        int j = 0;
+        for (int i = 0; i < pushed.size(); i++) {
+            stack.push(pushed[i]);
+            while (!stack.empty() && stack.top() == popped[j]) {
+                stack.pop();
+                j++;
+            }
+        }
+        return stack.empty();
     }
 };
 ```

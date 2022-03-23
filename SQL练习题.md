@@ -66,7 +66,37 @@ insert into Teacher values('03' , '王五');
 
 ## 题目
 
-### 关注数据库查询设计
+### 排行榜设计
+
+score表：自增主键、用户id、用户分区、用户分数
+
+**根据分区查整体排名**
+
+```mysql
+select s.user_id, @curRank := @curRank + 1 as rank_no
+from score s,
+     (select @curRank := 0) r
+where s.region_id = 1
+order by s.score desc
+limit 100
+```
+
+**根据排名查人**
+
+```mysql
+select t.*
+from (select s.user_id, @curRank := @curRank + 1 as rank_no
+      from (select * from score order by score desc) s,
+           (select @curRank := 0) r
+      where s.region_id = 1) as t
+where t.rank_no=1
+```
+
+
+
+
+
+### 关注设计
 
 自增主键、用户 id、用户关注的人 id
 
@@ -99,8 +129,8 @@ where a.me_id = 2
 **查询用户粉丝数和关注数**
 
 ```mysql
-SELECT (SELECT COUNT(followed_id) as count FROM follow WHERE followed_id = 1) as Followers
-     , (SELECT COUNT(me_id) as count FROM follow WHERE me_id = 1)             as Following
+SELECT (SELECT COUNT(followed_id) as count FROM follow WHERE followed_id = 1) as Followers,
+       (SELECT COUNT(me_id) as count FROM follow WHERE me_id = 1)             as Following
 ```
 
 
