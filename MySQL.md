@@ -675,6 +675,18 @@ MySQL 前缀索引能有效减小索引文件的大小，提高索引的速度�
 
 
 
+## 语句执行顺序
+
+1. from (join on)
+2. where
+3. group by
+4. having
+5. select
+6. order by
+7. limit
+
+
+
 ## 查询过程
 
 [MySQL数据库：SQL语句的执行过程_张维鹏的博客-CSDN博客_数据库执行sql语句](https://blog.csdn.net/a745233700/article/details/113927318)
@@ -745,3 +757,9 @@ MySQL是只支持一种JOIN算法Nested-Loop Join（嵌套循环链接）
 ## SQL题
 
 [经典SQL练习题(MySQL版)_廖致君的博客-CSDN博客_mysql练习](https://blog.csdn.net/paul0127/article/details/82529216)
+
+
+
+## limit 优化
+
+[(18条消息) MySQL性能优化_limit 的优化_4change的博客-CSDN博客](https://blog.csdn.net/CSDN_FlyYoung/article/details/122984909)
