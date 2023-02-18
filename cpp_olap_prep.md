@@ -32,6 +32,10 @@
 
 ## C++:新特性
 
+```cpp
+shared_from_this()
+```
+
 ## 分布式追踪:Dapper论文
 
 ## 数据库优化:LSM论文
