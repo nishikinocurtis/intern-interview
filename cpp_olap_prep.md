@@ -89,7 +89,7 @@
 
 				- 缓存技术: 强制缓存: 由服务器在Response头中标记Cache-Control或Expires实现, 客户端会保持缓存至这个时间, Cache-control 选项更多一些，设置更加精细，所以建议使用 Cache-Control 来实现强缓存；协商缓存: 第二次请求起带资源tag, 交给服务器比较, 如果服务器认为不需要重传数据, 就响应304. 具体实现方式?
 
-				- 版本特性: HTTP1.0没有长连接, HTTP1.1引入, 2.0, 3.0改用UDP
+				- 版本特性: HTTP1.0没有长连接, HTTP1.1引入长连接和Pipeline, 但会导致队头阻塞, 2.0引入多路复用, 3.0改用QUIC/UDP.
 
 				- HTTPS: 在HTTP下加入TLS层, 非对称+对称混合加密 (RSA太慢, 直传AES不安全)
 
@@ -111,117 +111,99 @@
 
 - IO多路复用
 
-		- select, poll(select + larger fd set), epoll(event poll: not scanning fd but register fd with call back)
+		- IO模型: 同步阻塞BIO: 单线程(recv/send)会阻塞其他请求, BIO多线程: 每个请求一个线程, 会很快膨胀, 超过系统能力. 同步非阻塞NIO: accept请求后加入一个set, 每次轮询处理数据, 浪费cpu.
 
-		- 实际问题: 
+		- 多路复用: 每个线程都可以找到多个有事件的socket fd处理, select, poll(select + larger fd set), epoll(event poll: not scanning fd but register fd with call back). 详细讲讲epoll: 基于事件回调: 请求进来时直接查询谁在听这个事件, 而不是一个个扫描发生了什么事件.
+
+		- epoll的模式: LT/ET模式: LT只要buffer有剩余数据可读就会触发epoll_wait, ET只在首次触发, 注意把buffer读干净.
+
+		- duplicate fd问题: 先把fd1关了, 没有取消注册, 导致无法从epoll中取消注册fd1(因为fd1无效了), 后续fd2继续听事件, 还会一直触发fd1, 却无法操作. 解决方案: 先取消注册, 再关闭fd
+
+		- 惊群问题: 父子共享fd: 导致同时唤醒；多个线程注册同一个fd, 也导致同时唤醒. 对于父子问题: 因为还是同一个epoll实例, 可以用ET模式保证只通知一次, 但对于第二个问题, 可以用Linux新特性, `EPOLLEXCLUSIVE`参数. 但还是有问题:
+
+		- 无效唤醒, 饥饿问题...
+
 
 - 网络统一是大端的: 最重要的bit最先出现. 转换: htonx, ntohx.
 
+- Socket
 
-1. TCP全流程
-
-- 3-way handshake
-
-why not 2? For server to ensure no re-connection happens
-
-- 4-way farewell
-
-why not 3? Half-close, after client stops transmission, it can still accept msg from server, if server also wants to stop, 3-way is OK.
-
-- 状态转换
-
-- Congestion Control
-
-Slow start
-
-- Flow Control
-
-Sliding Window
-
-- Reliable Transportation
-
-Sequence No., Retransmission
+	- 状态流程: Server: create, bind, listen, accept；Client: create, bind, connect
 
 
-2. Socket建立链接流程
+- 高并发处理
 
-Server: create, bind, listen, accept
+	服务侧缓存(Redis), 用户侧缓存(CDN), 数据库性能优化, 短期:削峰(MQ), 长期:扩容(负载均衡+resharding+分库分表+定期落盘+服务注册/发现)
 
-Client: create, bind, connect
+	- CDN: 适用范围? 静态内容, 实际问题? 智能分配, 防盗链
 
-3. Multiplexing方法
+	- 其他: 下面再说
 
+- zerocopy
 
+	- mmap + write
 
-有什么实际问题?
+	- sendfile
 
-4. UDP vs. TCP
-
-依然是: TCP的可靠性由什么实现: 有序重传
-
-这会带来很大的冗余metadata和握手确认过程, 造成性能损失
-
-5. Web全链路
-
-DNS解析, HTTP请求, Socket发起TCP连接, IP路由.
-
-	- DNS相关: 服务器层级, 查询方式对比, 协议细节(头, 端口号等等)
-
-	- HTTP和HTTPS区别, TLS双向建立流程, 类比SSH, 加密原理
-
-	- 路由协议对比, (E,I-)BGP/OSPF, 收敛方式
-
-	- ARP/ICMP细节
-
-6. 高并发处理
-
-服务侧缓存(Redis), 用户侧缓存(CDN), 短期:削峰(MQ), 长期:扩容(负载均衡+resharding+分库分表+定期落盘+服务注册/发现)
+	- DMA收集拷贝 + sendfile
 
 
-7. 问题收集
-
-大小端
-
-protobuf vs json
-
-rpc vs http
-
-RDMA
 
 
 ## 进程和线程: 原理,通信,同步,异常处理
 
-1. 原理和概念:
+- 原理和概念:
 
-Process: 操作系统管理大部分资源的最小单元: 地址空间
-Thread: 轻量级的调度单元, 通过Share地址空间实现concurrency, 有局部栈, 但也有内核中的thread实现
-Coroutine: Work on threads, 完全由协程库(用户态处理) (Pros&Cons: 减少内核切换, 但一旦Process不在运行所有coroutine都不能运行)
+	- Process: 操作系统管理大部分资源的最小单元: 地址空间
 
-2. 通信:
+	- Thread: 轻量级的调度单元, 通过Share地址空间实现concurrency, 有局部栈/PC/Register, 但也有内核/用户/混合中的thread实现
 
-进程: pipeline(有亲缘关系)和queue(无亲缘关系), 共享内存/变量, Signal, MQ, 网络(rpc/socket)
+	- Coroutine: Work on threads, 完全由协程库(用户态处理) (Pros&Cons: 减少内核切换, 但一旦Process不在运行所有coroutine都不能运行)
 
-速度, 容量和expressiveness呢?
+- 通信:
+
+	- 进程: pipe(有亲缘关系)(内存only)和named pipe(无亲缘关系)(有fs/磁盘节点), 共享内存(需要上锁来保证线程安全, 最快!)/信号量, Signal, MQ(在内核中, 可以有格式), 网络(rpc/socket)
+
+	- 线程呢? 线程共享地址空间, 没有通信必要, 只要做好线程安全.
+
+	- 速度, 容量和expressiveness呢?
 
 3. 同步:
 
-锁(mutex, spin), 信号量(semaphore), condition variable, 原子操作
+	锁(mutex, spin), 信号量(semaphore), condition variable, 原子操作
 
 	- Deadlock and avoidance
 
-	- S-X Lock: Also 缓存一致性
+		- 四个条件: 互斥, 占有等待, 非抢占, 依赖环
 
-	- Optimistic and pessimistic lock
+		- 解决方法: 预防, 避免, 检测+解除, 银行家算法
+
+	- S-X Lock: Also CPU缓存一致性
+
 
 	- 一些规范
 
 	- 生产/消费者
 
-有什么性能问题? 安全问题?
+	有什么性能问题? 安全问题?
+
+	- 锁分类:
+
+		- mutex: 失败后释放(有context switching成本)
+
+		- spin: 失败后busy waiting(由CPU的原子命令不断查询)
+
+		- 读写锁: S-X Lock, 读不阻塞, 队列中有写就会阻塞后面的读请求
+
+		- 乐观锁/悲观锁: 乐观是无锁操作, 先操作, 有更新就放弃, 悲观是每次都上锁
 
 4. 异常处理, 中断和信号
 
 5. 线程池
+
+就是复用线程, 不再重复创建和销毁
+
+参数: 取决于任务类型, 越偏向IO密集的可以给越多quota, 避免阻塞浪费CPU时间
 
 
 ## 分布式
@@ -238,15 +220,42 @@ Coroutine: Work on threads, 完全由协程库(用户态处理) (Pros&Cons: 减�
 
 ## 内存管理,分区
 
+- 管理什么? 分配释放, 追踪
+
+- 怎么管理? Contiuous, or Block, page, segment, page_segment
+
 1. 虚拟内存, 分区, MMU
 
 
 
-2. 分页, 分段, 页表, 多级页表 TLB重填
+- 分页, 分段, 页表, 多级页表 TLB重填
 
-性能问题? 
+	- 页表加速: 从vpage到物理page的映射表, 但每次都去内存中搜索比较慢, 所以有了TLB.
 
-3. 内存对齐, 栈溢出
+	- 多级页表: 页表全部存在内存中比较占空间, 通过分级提高管理粒度, 每次load一小部分
+
+	- CPU寻址: MMU
+
+	- 页面置换(FIFO, LRU, LFU, Clock, working set), 分段置换, 局部性
+
+	性能问题? 
+
+- 内存对齐, 栈溢出
+
+	- pragma pack自动对齐, 宽度标记手动对齐
+
+- fork: copy on write:
+
+	Linux中fork时内存空间发生了以下变化：
+
+	fork函数从已存在的进程中创建一个新的进程，新进程为子进程，原进程为父进程。
+	系统先给子进程分配资源，例如存储数据和代码的空间，然后把父进程的所有值都复制到子进程中，只有少数值与父进程的值不同。
+	子进程复制了父进程的task_struct结构和系统堆栈空间，但其他资源却是与父进程共享的，比如文件指针，socket描述符等。
+	子进程被创建后，父进程的全局变量和静态变量复制到子进程的地址空间中，这些变量将相互独立。
+	fork时使用相同的物理内存，并通过写时复制（copy-on-write）的方式维护各自的数据。
+
+	Copy-on-write (COW) in Linux memory management is mainly used to share the virtual memory of operating system processes, in the implementation of the fork system call12. When a process forks a child process, instead of copying all the data in the parent process to the child process, it marks certain pages of memory as read-only and keeps a count of the number of references to each page34. If either process tries to modify a shared page, a page fault occurs and the kernel will copy that page before allowing the write15. This way, COW can speed up the creation of child processes and save memory space32.
+
 
 
 ## 调度
@@ -269,7 +278,11 @@ Coroutine: Work on threads, 完全由协程库(用户态处理) (Pros&Cons: 减�
 
 1. 引擎
 
-MyISAM, InnoDB和InMemory对比
+	MyISAM, InnoDB和InMemory对比: 
+	InnoDB保证可重复读, 无性能损失, 支持事务, 支持行锁, 支持外键(但不建议使用)
+	支持redo log自动恢复, 支持MVCC, 性能更强(MyISAM不支持并发)
+
+	MERGE/ARCHIVE
 
 2. 并发控制/一致性问题
 
@@ -277,15 +290,57 @@ MyISAM, InnoDB和InMemory对比
 
 	- 隔离级别
 
-	- 事务性是什么, 实现方式, MVCC
+		4 level: read-uncommitted, read-committed, repeatable-read, serielizable.
+
+		脏读, 幻读, 不可重复读: 脏读是指一个事务在处理数据的过程中，读取到另一个未提交事务的数据；不可重复读是指对于数据库中的某个数据，一个事务范围内的多次查询却返回了不同的结果，这是由于在查询过程中，数据被另外一个事务修改并提交了；指一个事务执行两次查询，但第二次查询的结果包含了第一次查询中未出现的数据。
+
+	- 事务性是什么(ACID), 实现方式, MVCC
+
+		- redo log: D
+
+		- undo log: A, MVCC
+
+		- MVCC保证了什么: 一致性非锁定读；如何实现:增加事务id, 回滚指针, 隐藏row id
+
+		- 一致性锁定读: select for update, select lock in share mode, 可以在读取时加S/X锁.
+
+	- lock
+
+		- 表锁, 行锁, gap lock, next key lock(row + gap)(record lock只能锁已经存在的, 对于范围查询, 需要同时锁范围避免并发更新影响结果)
+
+		- intention lock: 锁表
+
+		- auto-inc lock
 
 3. 索引
 
-	- 分类
+	一种利用有序性快速查询的数据结构
 
-	- 最左前缀
+	- 底层实现: Hash表(加挂链/挂红黑树), 但不支持范围查询；B/B+树 区别?(B+相邻节点有链表, 方便范围查询, 数据都在叶子节点, 复杂度稳定)
 
-	- Hash索引
+	- Clustered / Non-clustered? 数据本身和索引结构是否在一起
+
+	- Primary / Unique
+
+	- 覆盖(Index contains data, 无需回表), 联合(Multi column), 全文(需要分词, etc. 不如ES)
+
+	- 最左前缀: 从左向右一次filter, 所以能筛掉更多data的column放前面.
+
+	- 索引优化: NOT NULL, for frequent read, for condition, for order, for join, not for frequent write, not too much, union preferred than multiple single indices, avoid redundance, use prefix index for string
+
+	- explain查看执行计划
+
+	- 索引失效: select\*, 组合索引查询顺序, 在索引列上做了转换, like%查询, or的条件中有非索引列, 类型implicit转换
+
+4. 日志
+
+	- redo log: encodes request to change table data, recover unfinished modifications (未物理完成事务的恢复)
+
+	- undo log: each associates with a read/write operation, for other transactions to get history / unmodified data. (并发多版本冲突的解决/失败事务的回滚) 解决原子性: 没提交的就对其他并行事务不生效.
+
+	- binary log: for replication & recovery, only used for statements modifying data. resilient to unexpected halts, only completed events are logged. (数据主体的恢复), 不是由引擎提供.
+
+	- slow query log: mysqldumpslow command, record queries that take long time or examine many rows, for optimization
 
 4. 范式
 
@@ -293,7 +348,7 @@ MyISAM, InnoDB和InMemory对比
 
 5. 优化
 
-	- 索引优化
+	
 
 
 
@@ -316,7 +371,11 @@ Causal, Linearizable, Sequential
 
 ## 设计模式
 
-单例模式
+单例模式(Tracing Exporter)
+
+适配器模式(Abstraction)
+
+工厂模式(通用接口, 无需指定具体类, 可以由参数自动确定)
 
 
 Java的一些: 依赖注入, 控制反转, 切面编程
@@ -339,6 +398,10 @@ ip
 
 ps
 
+nm
+
+netstat
+
 traceroute
 
 cp, rn, mv
@@ -346,9 +409,9 @@ cp, rn, mv
 
 ## C++:系统相关
 
-`volatile`关键字
+`volatile`关键字: 当两个线程都要用到某一个变量且该变量的值会被改变时，应该用 volatile 声明，该关键字的作用是防止优化编译器把变量从内存装入 CPU 寄存器中。 如果变量被装入寄存器，那么两个线程有可能一个使用内存中的变量，一个使用寄存器中的变量，这会造成程序的错误执行。
 
-环境感知
+环境感知: 怎么知道当前系统架构? 
 
 内存分区
 
@@ -366,9 +429,20 @@ C++11线程库:
 
 ## C++:面向对象
 
-- `final`关键字
+- `final`关键字 (C++11, 阻止)
+
+	根据搜索结果123，final说明符有以下作用和用法：
+
+	- 用于防止类的进一步派生或虚函数的进一步重写。
+	- 可以修饰非抽象类、非抽象类成员方法和变量。
+	- 只能放在类名或函数声明的后面。
+	- 不能修饰纯虚函数，因为没有意义。
 
 - `explicit`构造
+	
+	explicit is a keyword used before constructors and is defined as making the constructor not conduct any implicit conversion by specifying the keyword explicit. 
+	This means that a constructor or conversion function (since C++11) or deduction guide (since C++17) marked with explicit cannot be used for implicit conversions and copy-initialization.
+	For example, if you have a class A with an explicit constructor that takes an int argument, you cannot write A a = 5; because that would imply an implicit conversion from int to A. You have to write A a(5); or A a = A(5); instead.
 
 - `delete`构造删除
 
@@ -386,7 +460,21 @@ C++11线程库:
 
 内存布局(类的), 对齐, 大小
 
-多态原理: 虚表和虚指针
+Text, data, bss, heap go up, stack go down, highest arguments
+
+默认栈空间大小: 8Me
+
+- 多态原理: 虚表和虚指针
+
+	静态多态是通过重载和模板技术实现的，在编译期间确定；动态多态是通过虚函数和继承关系实现的，执行动态绑定，在运行期间确定
+
+	当编译器发现类中有虚函数时，会创建一张虚函数表，把虚函数的函数入口地址放到虚函数表中，并且在对象中增加一个指针vptr，用于指向类的虚函数表。当派生类覆盖基类的虚函数时，会将虚函数表中对应的指针进行替换，从而调用派生类中覆盖后的虚函数，从而实现动态绑定
+
+	定义纯虚函数是为了实现一个接口，起到规范的作用，想要继承这个类就必须覆盖该函数, 实现方式是在虚函数声明的结尾加上= 0即可。
+	
+	虚函数表是针对类的，类的所有对象共享这个类的虚函数表，因为每个对象内部都保存一个指向该类虚函数表的指针vptr，每个对象的vptr的存放地址都不同，但都指向同一虚函数表。
+
+	构造和析构: 构造一个对象的时候，必须知道对象的实际类型，而虚函数是在运行期间确定实际类型的。如果构造函数为虚函数，则在构造一个对象时，由于对象还未构造成功，编译器还无法知道对象的实际类型，是该类本身还是派生类。无法确定. 虚函数的执行依赖于虚函数表，而虚函数表是在构造函数中初始化的，即初始化vptr，让它指向虚函数表。如果构造函数为虚函数，则在构造对象期间，虚函数表还没有被初始化，将无法进行. 如果析构函数不被声明成虚函数，则编译器实施静态绑定，在删除基类指针时，只会调用基类的析构函数而不调用派生类析构函数，这样就会造成派生类对象析构不完全。所以，将析构函数声明为虚函数是十分必要的。
 
 
 ## C++:语言特性
@@ -418,7 +506,7 @@ vector原理, 扩容, 均摊复杂度
 
 `auto_ptr`: 使用copy constructor实现move, 随着move语义的引入而失效
 
-`shared_ptr`和`unique_ptr`, `weak_ptr`
+`shared_ptr`和`unique_ptr`, `weak_ptr`解决循环引用问题, 或者观察者模式, 不需要管理生命周期
 
 ```cpp
 shared_from_this()
